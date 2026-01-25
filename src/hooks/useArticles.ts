@@ -235,8 +235,17 @@ export const useCreateArticle = () => {
         category,
       } as Article;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
+      queryClient.invalidateQueries({ queryKey: ['published-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['trending-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['latest-articles'] });
+      // Invalidate public article queries
+      if (data?.slug) {
+        queryClient.invalidateQueries({ queryKey: ['public-article', data.slug] });
+      }
     },
   });
 };
@@ -274,6 +283,15 @@ export const useUpdateArticle = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['article', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
+      queryClient.invalidateQueries({ queryKey: ['published-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['trending-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['latest-articles'] });
+      // Invalidate public article queries
+      if (data?.slug) {
+        queryClient.invalidateQueries({ queryKey: ['public-article', data.slug] });
+      }
     },
   });
 };
@@ -287,6 +305,12 @@ export const useDeleteArticle = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['articles-by-category'] });
+      queryClient.invalidateQueries({ queryKey: ['published-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['trending-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['latest-articles'] });
+      queryClient.invalidateQueries({ queryKey: ['public-article'] });
     },
   });
 };

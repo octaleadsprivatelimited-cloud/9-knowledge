@@ -390,35 +390,122 @@ export const useArticlesByCategory = (categorySlug: string, limit: number = 6) =
   return useQuery({
     queryKey: ['articles-by-category', categorySlug, limit],
     queryFn: async () => {
-      // First get the category
-      const categoriesQuery = query(
-        collection(db, 'categories'),
-        where('slug', '==', categorySlug),
-        firestoreLimit(1)
-      );
-
-      const categorySnapshot = await getDocs(categoriesQuery);
-      if (categorySnapshot.empty) return [];
-
-      const categoryId = categorySnapshot.docs[0].id;
-
-      // Get articles for this category
-      const articlesQuery = query(
-        collection(db, 'articles'),
-        where('status', '==', 'published'),
-        where('category_id', '==', categoryId),
-        orderBy('published_at', 'desc'),
-        firestoreLimit(limit)
-      );
-
-      const snapshot = await getDocs(articlesQuery);
-      const articles: PublicArticle[] = [];
-
-      for (const docSnapshot of snapshot.docs) {
-        articles.push(await convertToPublicArticle(docSnapshot));
+      if (!db) {
+        console.warn('Firebase is not configured');
+        return [];
       }
 
-      return articles;
+      try {
+        // First get the category
+        const categoriesQuery = query(
+          collection(db, 'categories'),
+          where('slug', '==', categorySlug),
+          firestoreLimit(1)
+        );
+
+        const categorySnapshot = await getDocs(categoriesQuery);
+        if (categorySnapshot.empty) return [];
+
+        const categoryId = categorySnapshot.docs[0].id;
+
+        // Get articles for this category - include both published and scheduled articles
+        const articlesQuery = query(
+          collection(db, 'articles'),
+          where('category_id', '==', categoryId),
+          orderBy('published_at', 'desc'),
+          firestoreLimit(limit * 2) // Get more to filter client-side
+        );
+
+        const snapshot = await getDocs(articlesQuery);
+        const articles: PublicArticle[] = [];
+        const now = new Date();
+
+        for (const docSnapshot of snapshot.docs) {
+          const data = docSnapshot.data();
+          
+          // Include published articles OR scheduled articles that should be published
+          const isPublished = data.status === 'published';
+          const isScheduledAndReady = data.status === 'scheduled' && 
+            data.scheduled_at && 
+            new Date(data.scheduled_at.toDate ? data.scheduled_at.toDate() : data.scheduled_at) <= now;
+
+          if (isPublished || isScheduledAndReady) {
+            articles.push(await convertToPublicArticle(docSnapshot));
+          }
+        }
+
+        // Sort by published_at (or use created_at as fallback) and limit
+        articles.sort((a, b) => {
+          const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+          const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        return articles.slice(0, limit);
+      } catch (error: any) {
+        // If collection doesn't exist or permission denied, return empty array
+        if (error?.code === 'not-found' || error?.message?.includes('not found') || error?.code === 'permission-denied') {
+          console.warn('Articles by category: Collection not found or permission denied');
+          return [];
+        }
+        // If orderBy fails, try without orderBy
+        if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
+          console.warn('Articles by category: orderBy failed, trying without orderBy:', error.message);
+          
+          try {
+            // First get the category
+            const categoriesQuery = query(
+              collection(db, 'categories'),
+              where('slug', '==', categorySlug),
+              firestoreLimit(1)
+            );
+
+            const categorySnapshot = await getDocs(categoriesQuery);
+            if (categorySnapshot.empty) return [];
+
+            const categoryId = categorySnapshot.docs[0].id;
+
+            // Get articles for this category without orderBy
+            const articlesQuery = query(
+              collection(db, 'articles'),
+              where('category_id', '==', categoryId)
+            );
+
+            const snapshot = await getDocs(articlesQuery);
+            const articles: PublicArticle[] = [];
+            const now = new Date();
+
+            for (const docSnapshot of snapshot.docs) {
+              const data = docSnapshot.data();
+              
+              // Include published articles OR scheduled articles that should be published
+              const isPublished = data.status === 'published';
+              const isScheduledAndReady = data.status === 'scheduled' && 
+                data.scheduled_at && 
+                new Date(data.scheduled_at.toDate ? data.scheduled_at.toDate() : data.scheduled_at) <= now;
+
+              if (isPublished || isScheduledAndReady) {
+                articles.push(await convertToPublicArticle(docSnapshot));
+              }
+            }
+
+            // Sort manually by published_at (or use created_at as fallback)
+            articles.sort((a, b) => {
+              const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+              const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+              return dateB - dateA;
+            });
+
+            return articles.slice(0, limit);
+          } catch (fallbackError: any) {
+            console.error('Articles by category: Fallback query also failed:', fallbackError);
+            return [];
+          }
+        }
+        
+        console.error('Articles by category: Unexpected error:', error);
+        return [];
+      }
     },
     enabled: !!categorySlug,
   });
