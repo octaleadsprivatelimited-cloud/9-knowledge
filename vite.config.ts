@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/',
   server: {
     host: "::",
     port: 8080,
@@ -18,5 +19,18 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["react", "react-dom", "firebase/app", "firebase/auth", "firebase/firestore", "firebase/storage"],
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+        },
+      },
+    },
   },
 }));
