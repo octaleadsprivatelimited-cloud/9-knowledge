@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { categories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { SearchModal } from "@/components/search/SearchModal";
+import { useLatestArticles } from "@/hooks/usePublicArticles";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Use a small limit and cache for 5 minutes - this query is shared with other components
+  const { data: latestArticles } = useLatestArticles(1);
+  const latestArticle = latestArticles && latestArticles.length > 0 ? latestArticles[0] : null;
 
   // Keyboard shortcut to open search
   useEffect(() => {
@@ -23,6 +27,18 @@ export function Header() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,9 +49,19 @@ export function Header() {
               <span className="flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-accent" />
                 <span className="font-medium">Trending:</span>
-                <Link to="/article/future-of-artificial-intelligence-2025" className="hover:text-accent transition-colors">
-                  AI Revolution 2025
-                </Link>
+                {latestArticle ? (
+                  <Link 
+                    to={`/article/${latestArticle.slug}`} 
+                    className="hover:text-accent transition-colors line-clamp-1 max-w-[200px] md:max-w-none truncate"
+                    title={latestArticle.title}
+                  >
+                    {latestArticle.title}
+                  </Link>
+                ) : (
+                  <Link to="/article/future-of-artificial-intelligence-2025" className="hover:text-accent transition-colors">
+                    AI Revolution 2025
+                  </Link>
+                )}
               </span>
             </div>
             <div className="hidden md:flex items-center gap-4">
@@ -107,10 +133,18 @@ export function Header() {
             </Button>
           </div>
         </div>
+      </header>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden border-t border-border bg-background animate-fade-in">
+      {/* Mobile Menu - Outside header to avoid z-index issues */}
+      {isMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] lg:hidden"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          {/* Menu */}
+          <div className="fixed top-[96px] left-0 right-0 bottom-0 lg:hidden border-t border-border bg-background z-[70] overflow-y-auto animate-fade-in">
             <div className="container py-4">
               <Button
                 variant="outline"
@@ -173,8 +207,8 @@ export function Header() {
               </nav>
             </div>
           </div>
-        )}
-      </header>
+        </>
+      )}
 
       {/* Search Modal */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

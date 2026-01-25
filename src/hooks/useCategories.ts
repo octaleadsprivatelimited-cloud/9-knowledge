@@ -124,6 +124,7 @@ export const useCategories = () => {
       }
     },
     retry: 1,
+    staleTime: 10 * 60 * 1000, // Cache categories for 10 minutes (they change less frequently)
   });
 };
 

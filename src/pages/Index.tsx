@@ -16,13 +16,17 @@ import { useCategories } from "@/hooks/useCategories";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
+  // Load critical content first
   const { data: featuredArticles, isLoading: featuredLoading, error: featuredError } = useFeaturedArticles();
-  const { data: trendingArticles, isLoading: trendingLoading, error: trendingError } = useTrendingArticles();
-  const { data: latestArticles, isLoading: latestLoading, error: latestError } = useLatestArticles(9);
   const { data: categories, error: categoriesError } = useCategories();
   
-  const { data: techArticles, error: techError } = useArticlesByCategory('technology', 6);
-  const { data: healthArticles, error: healthError } = useArticlesByCategory('health', 6);
+  // Load secondary content (can wait)
+  const { data: trendingArticles, isLoading: trendingLoading, error: trendingError } = useTrendingArticles();
+  const { data: latestArticles, isLoading: latestLoading, error: latestError } = useLatestArticles(9);
+  
+  // Load category-specific content only if categories are loaded
+  const { data: techArticles, error: techError } = useArticlesByCategory('technology', 6, { enabled: !!categories });
+  const { data: healthArticles, error: healthError } = useArticlesByCategory('health', 6, { enabled: !!categories });
 
   const techCategory = categories?.find((c) => c.slug === 'technology');
   const healthCategory = categories?.find((c) => c.slug === 'health');

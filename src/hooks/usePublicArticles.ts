@@ -241,6 +241,7 @@ export const useFeaturedArticles = () => {
       }
     },
     retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
 
@@ -311,6 +312,7 @@ export const useTrendingArticles = () => {
       }
     },
     retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
 
@@ -383,10 +385,11 @@ export const useLatestArticles = (limit: number = 9) => {
       }
     },
     retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
 
-export const useArticlesByCategory = (categorySlug: string, limit: number = 6) => {
+export const useArticlesByCategory = (categorySlug: string, limit: number = 6, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['articles-by-category', categorySlug, limit],
     queryFn: async () => {
@@ -507,7 +510,8 @@ export const useArticlesByCategory = (categorySlug: string, limit: number = 6) =
         return [];
       }
     },
-    enabled: !!categorySlug,
+    enabled: options?.enabled !== false && !!categorySlug,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 };
 

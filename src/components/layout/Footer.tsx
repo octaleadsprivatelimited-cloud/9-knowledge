@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { Mail, Twitter, Facebook, Linkedin, Instagram, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Twitter, Facebook, Linkedin, Instagram, ChevronDown, ArrowRight, Sparkles, Clock } from "lucide-react";
 import { categories } from "@/lib/data";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLatestArticles } from "@/hooks/usePublicArticles";
 
 export function Footer() {
   // Initialize all sections as open by default (especially for desktop)
@@ -12,8 +13,10 @@ export function Footer() {
     categories: true,
     more: true,
     company: true,
+    latest: true,
   });
   const [email, setEmail] = useState("");
+  const { data: latestArticles, error: latestError } = useLatestArticles(5);
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -68,7 +71,7 @@ export function Footer() {
         </div>
 
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           {/* Brand Section */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-flex items-center mb-6 group">
@@ -221,6 +224,53 @@ export function Footer() {
               </CollapsibleContent>
             </Collapsible>
           </div>
+
+          {/* Latest News - Collapsible on mobile */}
+          <div>
+            <Collapsible open={openSections.latest} onOpenChange={() => toggleSection('latest')}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full md:pointer-events-none mb-4">
+                <h4 className="text-lg font-display font-bold text-primary-foreground">Latest News</h4>
+                <ChevronDown className={`h-5 w-5 md:hidden transition-transform text-primary-foreground/50 ${openSections.latest ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="md:!block md:!visible md:data-[state=closed]:!block md:data-[state=closed]:!visible">
+                {latestArticles && latestArticles.length > 0 ? (
+                  <ul className="space-y-3">
+                    {latestArticles.map((article) => (
+                      <li key={article.id}>
+                        <Link
+                          to={`/article/${article.slug}`}
+                          className="text-sm text-primary-foreground/70 hover:text-accent transition-all duration-300 flex items-start gap-2 group"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent/0 group-hover:bg-accent transition-all duration-300 mt-1.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <span className="group-hover:translate-x-1 transition-transform line-clamp-2 block">
+                              {article.title}
+                            </span>
+                            {article.published_at && (
+                              <div className="flex items-center gap-1 mt-1 text-xs text-primary-foreground/50">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {new Date(article.published_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : latestError ? (
+                  <p className="text-sm text-primary-foreground/50">Unable to load articles.</p>
+                ) : (
+                  <p className="text-sm text-primary-foreground/50">No articles yet.</p>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         </div>
       </div>
 
@@ -231,18 +281,28 @@ export function Footer() {
             <p className="text-sm text-primary-foreground/70 text-center md:text-left">
               © {new Date().getFullYear()} <span className="font-semibold text-primary-foreground">9knowledge</span>. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-sm text-primary-foreground/70">
-              <Link to="/privacy" className="hover:text-accent transition-colors">
-                Privacy
-              </Link>
-              <span className="text-primary-foreground/30">•</span>
-              <Link to="/terms" className="hover:text-accent transition-colors">
-                Terms
-              </Link>
-              <span className="text-primary-foreground/30">•</span>
-              <span className="text-primary-foreground/50">
-                Developed by <span className="font-semibold text-primary-foreground/70">octaleads Pvt Ltd</span>
-              </span>
+            <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-sm text-primary-foreground/70">
+              <div className="flex items-center gap-4 md:gap-6 flex-wrap justify-center">
+                <Link to="/privacy" className="hover:text-accent transition-colors">
+                  Privacy
+                </Link>
+                <span className="text-primary-foreground/30 hidden md:inline">•</span>
+                <Link to="/terms" className="hover:text-accent transition-colors">
+                  Terms
+                </Link>
+                <span className="text-primary-foreground/30 hidden md:inline">•</span>
+              </div>
+              <div className="text-center md:text-left">
+                <span className="text-primary-foreground/70">Developed by </span>
+                <a 
+                  href="https://octaleads.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="font-semibold text-primary-foreground hover:text-accent transition-colors underline underline-offset-2"
+                >
+                  Octaleads Pvt Ltd
+                </a>
+              </div>
             </div>
           </div>
         </div>
