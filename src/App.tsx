@@ -26,6 +26,7 @@ import UsersPage from "./pages/admin/UsersPage";
 import AdsPage from "./pages/admin/AdsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import MediaPage from "./pages/admin/MediaPage";
+import SeedArticlesPage from "./pages/admin/SeedArticlesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/admin/ads" element={<ProtectedRoute requireSuperAdmin><AdsPage /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute requireSuperAdmin><UsersPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requireSuperAdmin><SettingsPage /></ProtectedRoute>} />
+            <Route path="/admin/seed-articles" element={<ProtectedRoute requireSuperAdmin><SeedArticlesPage /></ProtectedRoute>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

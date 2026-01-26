@@ -2,7 +2,7 @@ import { Layout } from "@/components/layout/Layout";
 import { HeroSection } from "@/components/home/HeroSection";
 import { TrendingSection } from "@/components/home/TrendingSection";
 import { LatestArticles } from "@/components/home/LatestArticles";
-import { CategorySection } from "@/components/home/CategorySection";
+import { CategoryArticlesSection } from "@/components/home/CategoryArticlesSection";
 import { BrowseCategories } from "@/components/home/BrowseCategories";
 import { WebsiteSchema, OrganizationSchema } from "@/components/seo/StructuredData";
 import { Helmet } from "react-helmet-async";
@@ -23,13 +23,6 @@ const Index = () => {
   // Load secondary content (can wait)
   const { data: trendingArticles, isLoading: trendingLoading, error: trendingError } = useTrendingArticles();
   const { data: latestArticles, isLoading: latestLoading, error: latestError } = useLatestArticles(9);
-  
-  // Load category-specific content only if categories are loaded
-  const { data: techArticles, error: techError } = useArticlesByCategory('technology', 6, { enabled: !!categories });
-  const { data: healthArticles, error: healthError } = useArticlesByCategory('health', 6, { enabled: !!categories });
-
-  const techCategory = categories?.find((c) => c.slug === 'technology');
-  const healthCategory = categories?.find((c) => c.slug === 'health');
 
   const isLoading = featuredLoading || trendingLoading || latestLoading;
   const hasError = featuredError || trendingError || latestError || categoriesError;
@@ -40,8 +33,6 @@ const Index = () => {
     if (trendingError) console.error('Trending articles error:', trendingError);
     if (latestError) console.error('Latest articles error:', latestError);
     if (categoriesError) console.error('Categories error:', categoriesError);
-    if (techError) console.error('Tech articles error:', techError);
-    if (healthError) console.error('Health articles error:', healthError);
   }
 
   if (isLoading) {
@@ -95,19 +86,13 @@ const Index = () => {
       )}
 
 
-      {/* Category Sections */}
-      {techCategory && techArticles && techArticles.length > 0 && (
-        <CategorySection
-          category={techCategory}
-          articles={techArticles}
+      {/* Category Sections - Show 3 articles for each category */}
+      {categories && categories.length > 0 && categories.map((category) => (
+        <CategoryArticlesSection
+          key={category.id}
+          category={category}
         />
-      )}
-      {healthCategory && healthArticles && healthArticles.length > 0 && (
-        <CategorySection
-          category={healthCategory}
-          articles={healthArticles}
-        />
-      )}
+      ))}
 
       {/* Show error message */}
       {hasError && !isLoading && (

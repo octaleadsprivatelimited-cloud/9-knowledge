@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Globe, Mail, Bell, Shield, Palette, Clock, CheckCircle } from 'lucide-react';
+import { Save, Globe, Shield, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const SettingsPage = () => {
@@ -40,55 +40,8 @@ const SettingsPage = () => {
     youtube: '',
   });
 
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNewSubscriber: true,
-    emailNewComment: true,
-    emailWeeklyReport: true,
-    browserNotifications: false,
-  });
-
   const handleSave = (section: string) => {
     toast({ title: `${section} settings saved successfully` });
-  };
-
-  // Keep-alive functionality removed - Firebase doesn't require keep-alive pings
-  // Firebase services stay active automatically
-
-  const KeepAliveSettings = () => {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Backend Status
-            </CardTitle>
-            <CardDescription>
-              Firebase services stay active automatically - no keep-alive needed
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                <p className="font-medium text-green-900 dark:text-green-100">Firebase Services Active</p>
-              </div>
-              <p className="text-sm text-green-800 dark:text-green-200">
-                Firebase services (Firestore, Storage, Authentication) are always active and don't require keep-alive pings. 
-                Your backend will remain available 24/7 without any additional configuration.
-              </p>
-            </div>
-
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Unlike some free-tier database services, Firebase services don't go to sleep after inactivity. 
-                Your application will always be ready to serve requests.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
   };
 
   return (
@@ -100,7 +53,7 @@ const SettingsPage = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-3 lg:w-auto lg:inline-grid">
             <TabsTrigger value="general" className="gap-2">
               <Globe className="h-4 w-4" />
               <span className="hidden sm:inline">General</span>
@@ -112,18 +65,6 @@ const SettingsPage = () => {
             <TabsTrigger value="social" className="gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Social</span>
-            </TabsTrigger>
-            <TabsTrigger value="email" className="gap-2">
-              <Mail className="h-4 w-4" />
-              <span className="hidden sm:inline">Email</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Notifications</span>
-            </TabsTrigger>
-            <TabsTrigger value="keepalive" className="gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Keep-Alive</span>
             </TabsTrigger>
           </TabsList>
 
@@ -340,129 +281,6 @@ const SettingsPage = () => {
                 </Button>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="email">
-            <Card>
-              <CardHeader>
-                <CardTitle>Email Configuration</CardTitle>
-                <CardDescription>Configure email templates and SMTP settings</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    Email configuration is managed through Lovable Cloud. 
-                    Contact support for custom email template changes.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="font-medium">Email Templates</h4>
-                  <div className="grid gap-2">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Welcome Email</p>
-                        <p className="text-sm text-muted-foreground">Sent to new subscribers</p>
-                      </div>
-                      <Button variant="outline" size="sm">Preview</Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Newsletter</p>
-                        <p className="text-sm text-muted-foreground">Weekly digest template</p>
-                      </div>
-                      <Button variant="outline" size="sm">Preview</Button>
-                    </div>
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Password Reset</p>
-                        <p className="text-sm text-muted-foreground">Account recovery email</p>
-                      </div>
-                      <Button variant="outline" size="sm">Preview</Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>Configure when and how you receive notifications</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <h4 className="font-medium">Email Notifications</h4>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">New Subscriber</p>
-                      <p className="text-sm text-muted-foreground">Get notified when someone subscribes</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.emailNewSubscriber}
-                      onCheckedChange={(checked) => 
-                        setNotificationSettings({ ...notificationSettings, emailNewSubscriber: checked })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">New Comment</p>
-                      <p className="text-sm text-muted-foreground">Get notified on new article comments</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.emailNewComment}
-                      onCheckedChange={(checked) => 
-                        setNotificationSettings({ ...notificationSettings, emailNewComment: checked })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Weekly Report</p>
-                      <p className="text-sm text-muted-foreground">Receive weekly analytics summary</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.emailWeeklyReport}
-                      onCheckedChange={(checked) => 
-                        setNotificationSettings({ ...notificationSettings, emailWeeklyReport: checked })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="font-medium">Browser Notifications</h4>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Push Notifications</p>
-                      <p className="text-sm text-muted-foreground">Enable browser push notifications</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.browserNotifications}
-                      onCheckedChange={(checked) => 
-                        setNotificationSettings({ ...notificationSettings, browserNotifications: checked })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <Button onClick={() => handleSave('Notification')}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="keepalive">
-            <KeepAliveSettings />
           </TabsContent>
         </Tabs>
       </div>

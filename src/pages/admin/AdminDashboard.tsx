@@ -1,14 +1,13 @@
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { FileText, Eye, FolderOpen, Users, TrendingUp, Clock, ArrowUpRight, ArrowDownRight, BarChart3, PieChart, Image } from 'lucide-react';
+import { FileText, FolderOpen, TrendingUp, Clock, ArrowUpRight, ArrowDownRight, BarChart3, PieChart, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
-import { PingStatusCard } from '@/components/admin/PingStatusCard';
 
 const StatCard = ({ 
   title, 
@@ -112,11 +111,9 @@ const AdminDashboard = () => {
             </Badge>
           </Link>
         </div>
-        {/* Backend Status */}
-        <PingStatusCard />
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatCard
             title="Total Articles"
             value={analytics?.totalArticles || 0}
@@ -126,23 +123,9 @@ const AdminDashboard = () => {
             trendValue="+12%"
           />
           <StatCard
-            title="Total Views"
-            value={analytics?.totalViews?.toLocaleString() || 0}
-            icon={Eye}
-            trend="up"
-            trendValue="+8.2%"
-          />
-          <StatCard
             title="Categories"
             value={analytics?.categoryCount || 0}
             icon={FolderOpen}
-          />
-          <StatCard
-            title="Subscribers"
-            value={analytics?.subscriberCount || 0}
-            icon={Users}
-            trend="up"
-            trendValue="+24%"
           />
         </div>
 
@@ -322,18 +305,6 @@ const AdminDashboard = () => {
                   </div>
                 </Link>
                 <Link
-                  to="/admin/subscribers"
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors"
-                >
-                  <Users className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">View Subscribers</p>
-                    <p className="text-xs text-muted-foreground">
-                      Manage email subscribers
-                    </p>
-                  </div>
-                </Link>
-                <Link
                   to="/admin/media"
                   className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors"
                 >
@@ -342,6 +313,18 @@ const AdminDashboard = () => {
                     <p className="text-sm font-medium">Media Library</p>
                     <p className="text-xs text-muted-foreground">
                       Upload and manage images
+                    </p>
+                  </div>
+                </Link>
+                <Link
+                  to="/admin/seed-articles"
+                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors"
+                >
+                  <FileText className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Seed Articles</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add sample articles (3 per category)
                     </p>
                   </div>
                 </Link>
