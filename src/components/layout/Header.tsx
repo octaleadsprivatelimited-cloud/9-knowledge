@@ -14,18 +14,24 @@ export function Header() {
   const { data: latestArticles } = useLatestArticles(1);
   const latestArticle = latestArticles && latestArticles.length > 0 ? latestArticles[0] : null;
 
-  // Keyboard shortcut to open search
+  // Keyboard shortcut to open search and close menu
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchOpen(true);
+        setIsMenuOpen(false);
+      }
+      // Close menu on Escape key
+      if (e.key === 'Escape' && isMenuOpen) {
+        e.preventDefault();
+        setIsMenuOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isMenuOpen]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -41,7 +47,7 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-[100] w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         {/* Top Bar */}
         <div className="border-b border-border bg-primary text-primary-foreground">
           <div className="container flex h-8 items-center justify-between text-xs">
@@ -126,8 +132,12 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="lg:hidden relative z-[101]"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMenuOpen(!isMenuOpen);
+              }}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -135,79 +145,115 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile Menu - Outside header to avoid z-index issues */}
+      {/* Mobile Menu - Apple-style design */}
       {isMenuOpen && (
-        <>
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          {/* Backdrop with blur - starts below header */}
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] lg:hidden"
+            className="absolute top-[96px] left-0 right-0 bottom-0 bg-black/40 backdrop-blur-md transition-opacity duration-300"
             onClick={() => setIsMenuOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setIsMenuOpen(false);
+              }
+            }}
+            role="button"
+            tabIndex={-1}
+            aria-label="Close menu"
           />
-          {/* Menu */}
-          <div className="fixed top-[96px] left-0 right-0 bottom-0 lg:hidden border-t border-border bg-background z-[70] overflow-y-auto animate-fade-in">
-            <div className="container py-4">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 mb-4 text-muted-foreground"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsSearchOpen(true);
-                }}
-              >
-                <Search className="h-4 w-4" />
+          
+          {/* Menu Panel */}
+          <div 
+            className={cn(
+              "absolute top-[96px] left-0 right-0 bottom-0 bg-background/95 backdrop-blur-xl z-[70]",
+              "overflow-y-auto overscroll-contain",
+              "transform transition-transform duration-300 ease-out",
+              isMenuOpen ? "translate-y-0" : "-translate-y-full"
+            )}
+            onClick={(e) => {
+              // Prevent clicks inside menu from closing it
+              e.stopPropagation();
+            }}
+          >
+          <div className="px-6 pt-6 pb-6 space-y-1">
+            {/* Search Button */}
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsSearchOpen(true);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-muted/50 hover:bg-muted transition-all duration-200 group mb-4"
+            >
+              <Search className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <span className="text-base font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 Search articles...
-              </Button>
-              <nav className="grid gap-1">
+              </span>
+            </button>
+
+            {/* Categories Section - Display First */}
+            <div className="space-y-1 mb-6">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Categories
+              </div>
+              {categories.map((category) => (
                 <Link
-                  to="/"
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  key={category.id}
+                  to={`/category/${category.slug}`}
+                  className="block px-4 py-3.5 text-lg font-medium text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 active:scale-[0.98]"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Home
+                  {category.name}
                 </Link>
-                <Link
-                  to="/about"
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  About
-                </Link>
-                <Link
-                  to="/contact"
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Contact
-                </Link>
-                <Link
-                  to="/privacy"
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Privacy Policy
-                </Link>
-                <Link
-                  to="/disclaimer"
-                  className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Disclaimer
-                </Link>
-                <div className="border-t border-border my-2"></div>
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    to={`/category/${category.slug}`}
-                    className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {category.name}
-                  </Link>
-                ))}
-              </nav>
+              ))}
             </div>
+
+            {/* Divider */}
+            <div className="h-px bg-border/50 my-6"></div>
+
+            {/* Navigation Links - Display After Categories */}
+            <nav className="space-y-1">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Pages
+              </div>
+              <Link
+                to="/"
+                className="block px-4 py-3.5 text-lg font-medium text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 active:scale-[0.98]"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                to="/about"
+                className="block px-4 py-3.5 text-lg font-medium text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 active:scale-[0.98]"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              <Link
+                to="/contact"
+                className="block px-4 py-3.5 text-lg font-medium text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 active:scale-[0.98]"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact
+              </Link>
+              <Link
+                to="/privacy"
+                className="block px-4 py-3.5 text-lg font-medium text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 active:scale-[0.98]"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                to="/disclaimer"
+                className="block px-4 py-3.5 text-lg font-medium text-foreground hover:bg-muted/50 rounded-xl transition-all duration-200 active:scale-[0.98]"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Disclaimer
+              </Link>
+            </nav>
           </div>
-        </>
+        </div>
+        </div>
       )}
 
       {/* Search Modal */}
