@@ -45,6 +45,7 @@ interface Article {
   og_image?: string | null;
   canonical_url?: string | null;
   no_index?: boolean | null;
+  view_count?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -140,6 +141,7 @@ export const useArticles = (status?: ArticleStatus) => {
 
       return articles;
     },
+    refetchOnWindowFocus: true, // so admin sees updated view counts when returning to tab
   });
 };
 

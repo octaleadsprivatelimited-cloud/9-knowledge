@@ -5,7 +5,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import { 
+import {
   Bold, 
   Italic, 
   Underline as UnderlineIcon, 
@@ -26,6 +26,7 @@ import {
   Code,
   Minus,
   Pilcrow,
+  Languages,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
@@ -38,7 +39,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { translateTeluguToEnglish, containsTelugu } from '@/lib/teluguToEnglish';
 
 interface RichTextEditorProps {
   content: string;
@@ -47,7 +50,15 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-const MenuBar = ({ editor }: { editor: Editor | null }) => {
+const MenuBar = ({
+  editor,
+  onTranslateTeluguToEnglish,
+  translateLoading,
+}: {
+  editor: Editor | null;
+  onTranslateTeluguToEnglish?: () => Promise<void>;
+  translateLoading?: boolean;
+}) => {
   const [linkUrl, setLinkUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
@@ -270,6 +281,22 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
           </div>
         </PopoverContent>
       </Popover>
+
+      <Separator orientation="vertical" className="mx-1 h-6" />
+
+      {/* Telugu → English: translate words (meaning) via API */}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="gap-1.5 text-xs"
+        onClick={() => onTranslateTeluguToEnglish?.()}
+        disabled={!editor.state.doc.textContent || translateLoading}
+        title="Translate Telugu words to English"
+      >
+        <Languages className="h-4 w-4" />
+        {translateLoading ? 'Translating…' : 'Telugu → English'}
+      </Button>
     </div>
   );
 };
@@ -280,6 +307,7 @@ export const RichTextEditor = ({
   placeholder = 'Start writing your article...',
   className 
 }: RichTextEditorProps) => {
+  const [translateLoading, setTranslateLoading] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -314,6 +342,7 @@ export const RichTextEditor = ({
       attributes: {
         class: 'prose prose-sm sm:prose dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4',
       },
+      // Do not use transformPastedText – it can block paste. Paste raw; appendTransaction converts Telugu.
     },
   });
 
@@ -324,9 +353,34 @@ export const RichTextEditor = ({
     }
   }, [content, editor]);
 
+  const handleTranslateContent = useCallback(async () => {
+    if (!editor) return;
+    const text = editor.getText();
+    if (!text || !containsTelugu(text)) return;
+    setTranslateLoading(true);
+    try {
+      const translated = await translateTeluguToEnglish(text);
+      const html = translated
+        .split(/\n\n+/)
+        .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+      editor.commands.setContent(html || '<p></p>');
+      onChange(html || '<p></p>');
+      toast.success('Translated to English');
+    } catch {
+      toast.error('Translation failed');
+    } finally {
+      setTranslateLoading(false);
+    }
+  }, [editor, onChange]);
+
   return (
     <div className={cn('border rounded-lg overflow-hidden bg-background', className)}>
-      <MenuBar editor={editor} />
+      <MenuBar
+        editor={editor}
+        onTranslateTeluguToEnglish={handleTranslateContent}
+        translateLoading={translateLoading}
+      />
       <EditorContent editor={editor} />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, Timestamp, increment } from 'firebase/firestore';
 import { db } from '@/integrations/firebase/client';
 
 const generateSessionId = (): string => {
@@ -42,6 +42,10 @@ export const useReadingAnalytics = (articleId: string | undefined) => {
         time_on_page: timeOnPage,
         completed_reading: completedReading,
         created_at: Timestamp.now(),
+      });
+      // Increment article view_count so admin panel shows updated views
+      await updateDoc(doc(db, 'articles', articleId), {
+        view_count: increment(1),
       });
     } catch (error) {
       console.error('Error tracking reading analytics:', error);
