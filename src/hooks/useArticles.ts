@@ -141,7 +141,8 @@ export const useArticles = (status?: ArticleStatus) => {
 
       return articles;
     },
-    refetchOnWindowFocus: true, // so admin sees updated view counts when returning to tab
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000, // refetch every 15s so view counts update live on admin
   });
 };
 

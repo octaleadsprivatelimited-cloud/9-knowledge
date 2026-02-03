@@ -73,5 +73,6 @@ export const useAnalytics = () => {
         recentArticles,
       };
     },
+    refetchInterval: 15_000, // live view counts on dashboard
   });
 };

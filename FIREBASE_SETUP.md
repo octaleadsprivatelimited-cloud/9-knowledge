@@ -56,60 +56,57 @@ Fields:
   - created_at: "2025-01-25T..."
 ```
 
-### 4. Set Up Firestore Security Rules
+### 4. Set Up Firestore Security Rules (required for view tracking)
 
-Go to **Firestore Database** > **Rules** and use these rules:
+**Important:** View tracking only works if Firestore rules allow **unauthenticated** writes for:
+- `reading_analytics` – create (to log a view)
+- `articles/{id}` – update **only** the `view_count` field
+
+Go to **Firestore Database** > **Rules** in Firebase Console and replace your rules with the contents of the project file **`firestore.rules`**, or paste the rules below. Then click **Publish**.
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Articles - public read, authenticated write
+    // Articles - public read; auth full write; anyone can update ONLY view_count (for tracking)
     match /articles/{articleId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create, delete: if request.auth != null;
+      allow update: if request.auth != null
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['view_count']);
     }
-    
-    // Categories - public read, authenticated write
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+    // Reading analytics - anyone can create (public view tracking)
+    match /reading_analytics/{docId} {
+      allow read: if request.auth != null;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
     }
-    
-    // Tags - public read, authenticated write
-    match /tags/{tagId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Media/Images - public read, authenticated write
-    match /media/{mediaId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // User roles - authenticated users can read their own role
+    // Categories, tags, media - public read, authenticated write
+    match /categories/{categoryId} { allow read: if true; allow write: if request.auth != null; }
+    match /tags/{tagId} { allow read: if true; allow write: if request.auth != null; }
+    match /media/{mediaId} { allow read: if true; allow write: if request.auth != null; }
+    // User roles - read own; super_admin write
     match /user_roles/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.role == 'super_admin';
+      allow write: if request.auth != null
+        && get(/databases/$(database)/documents/user_roles/$(request.auth.uid)).data.role == 'super_admin';
     }
-    
-    // Profiles - authenticated users can read/write their own profile
     match /profiles/{profileId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == profileId;
     }
-    
-    // Other collections - adjust as needed
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
+    match /ad_slots/{docId} { allow read: if true; allow write: if request.auth != null; }
+    match /newsletter_subscribers/{docId} { allow read, write: if request.auth != null; }
+    match /{document=**} { allow read, write: if request.auth != null; }
   }
 }
 ```
 
-**Note**: The `media` collection stores image metadata. Actual image files are stored in Firebase Storage, but all metadata (URL, path, size, etc.) is tracked in Firestore for better querying and management.
+**If view tracking doesn’t work after deploying:**  
+1. In Firebase Console go to **Firestore** > **Rules** and ensure the rules above (especially `articles` and `reading_analytics`) are published.  
+2. In your hosting (Vercel/Netlify/etc.) set the same **VITE_FIREBASE_*** env vars as in `.env` so the deployed app uses the correct project.
+
+**Note**: The `media` collection stores image metadata. Actual image files are stored in Firebase Storage.
 
 ### 5. Set Up Storage Security Rules
 
@@ -209,6 +206,11 @@ The `media` collection is created automatically when you upload your first image
 ### "Permission denied" errors
 - Check your Firestore security rules
 - Make sure the rules allow authenticated users to read/write
+
+### View tracking not working after deploying / connecting domain
+1. **Firestore rules** – In Firebase Console go to **Firestore** > **Rules**. You must allow unauthenticated **create** on `reading_analytics` and unauthenticated **update** on `articles` (only `view_count`). Use the rules from **firestore.rules** in this project (see section 4 above).
+2. **Env vars in production** – In your hosting (Vercel, Netlify, etc.) add the same variables as in `.env`: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` (and optionally `VITE_FIREBASE_MEASUREMENT_ID`). Without these, the deployed app cannot talk to Firebase and views won’t be tracked.
+3. **Authorized domains** – In Firebase Console go to **Authentication** > **Settings** > **Authorized domains** and add your production domain (e.g. `yourdomain.com`).
 
 ### Still seeing blank page?
 - Check browser console (F12) for errors
