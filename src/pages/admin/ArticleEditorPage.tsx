@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Badge } from '@/components/ui/badge';
-import { translateTeluguToEnglish, containsTelugu } from '@/lib/teluguToEnglish';
 
 const generateSlug = (title: string): string => {
   return title
@@ -68,28 +67,6 @@ const ArticleEditorPage = () => {
   });
 
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [translatingField, setTranslatingField] = useState<string | null>(null);
-
-  const handleTranslateBlur = useCallback(
-    (field: keyof typeof formData, value: string) => {
-      if (!value || !containsTelugu(value)) return;
-      setTranslatingField(field);
-      translateTeluguToEnglish(value)
-        .then((translated) => {
-          if (translated !== value) {
-            setFormData((prev) =>
-              field === 'title'
-                ? { ...prev, title: translated, slug: isNew ? generateSlug(translated) : prev.slug }
-                : { ...prev, [field]: translated }
-            );
-            toast.success('Translated to English');
-          }
-        })
-        .catch(() => toast.error('Translation failed'))
-        .finally(() => setTranslatingField(null));
-    },
-    [isNew]
-  );
 
   // Autosave hook
   const storageKey = isNew ? 'article_draft_new' : `article_draft_${id}`;
@@ -268,13 +245,8 @@ const ArticleEditorPage = () => {
                     id="title"
                     value={formData.title}
                     onChange={(e) => handleTitleChange(e.target.value)}
-                    onBlur={(e) => handleTranslateBlur('title', (e.target as HTMLInputElement).value)}
                     placeholder="Enter article title"
-                    disabled={translatingField === 'title'}
                   />
-                  {translatingField === 'title' && (
-                    <p className="text-xs text-muted-foreground">Translating to English...</p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -283,13 +255,8 @@ const ArticleEditorPage = () => {
                     id="slug"
                     value={formData.slug}
                     onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    onBlur={(e) => handleTranslateBlur('slug', (e.target as HTMLInputElement).value)}
                     placeholder="article-url-slug"
-                    disabled={translatingField === 'slug'}
                   />
-                  {translatingField === 'slug' && (
-                    <p className="text-xs text-muted-foreground">Translating to English...</p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -298,14 +265,9 @@ const ArticleEditorPage = () => {
                     id="excerpt"
                     value={formData.excerpt}
                     onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                    onBlur={(e) => handleTranslateBlur('excerpt', (e.target as HTMLTextAreaElement).value)}
                     placeholder="Brief summary of the article"
                     rows={3}
-                    disabled={translatingField === 'excerpt'}
                   />
-                  {translatingField === 'excerpt' && (
-                    <p className="text-xs text-muted-foreground">Translating to English...</p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -346,10 +308,8 @@ const ArticleEditorPage = () => {
                       id="featured_image_alt"
                       value={formData.featured_image_alt}
                       onChange={(e) => setFormData({ ...formData, featured_image_alt: e.target.value })}
-                      onBlur={(e) => handleTranslateBlur('featured_image_alt', (e.target as HTMLInputElement).value)}
                       placeholder="Alt text for SEO"
                       className="text-sm"
-                      disabled={translatingField === 'featured_image_alt'}
                     />
                   </div>
 
@@ -395,14 +355,9 @@ const ArticleEditorPage = () => {
                     id="meta_title"
                     value={formData.meta_title}
                     onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })}
-                    onBlur={(e) => handleTranslateBlur('meta_title', (e.target as HTMLInputElement).value)}
                     placeholder="SEO title (max 60 characters)"
                     maxLength={60}
-                    disabled={translatingField === 'meta_title'}
                   />
-                  {translatingField === 'meta_title' && (
-                    <p className="text-xs text-muted-foreground">Translating to English...</p>
-                  )}
                   <p className="text-xs text-muted-foreground">
                     {formData.meta_title.length}/60 characters
                   </p>
@@ -414,15 +369,10 @@ const ArticleEditorPage = () => {
                     id="meta_description"
                     value={formData.meta_description}
                     onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
-                    onBlur={(e) => handleTranslateBlur('meta_description', (e.target as HTMLTextAreaElement).value)}
                     placeholder="SEO description (max 160 characters)"
                     maxLength={160}
                     rows={3}
-                    disabled={translatingField === 'meta_description'}
                   />
-                  {translatingField === 'meta_description' && (
-                    <p className="text-xs text-muted-foreground">Translating to English...</p>
-                  )}
                   <p className="text-xs text-muted-foreground">
                     {formData.meta_description.length}/160 characters
                   </p>
@@ -434,13 +384,8 @@ const ArticleEditorPage = () => {
                     id="meta_keywords"
                     value={formData.meta_keywords}
                     onChange={(e) => setFormData({ ...formData, meta_keywords: e.target.value })}
-                    onBlur={(e) => handleTranslateBlur('meta_keywords', (e.target as HTMLInputElement).value)}
                     placeholder="keyword1, keyword2, keyword3"
-                    disabled={translatingField === 'meta_keywords'}
                   />
-                  {translatingField === 'meta_keywords' && (
-                    <p className="text-xs text-muted-foreground">Translating to English...</p>
-                  )}
                 </div>
 
                 <div className="space-y-2">
