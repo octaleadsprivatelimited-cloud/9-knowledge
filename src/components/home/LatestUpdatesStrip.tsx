@@ -14,12 +14,12 @@ export function LatestUpdatesStrip({ articles }: LatestUpdatesStripProps) {
     <section className="border-b border-border bg-muted/30">
       <div className="container py-4">
         <h2 className="text-lg font-bold text-foreground mb-4">Latest Updates</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        <div className="grid grid-cols-2 md:flex md:flex-nowrap gap-3 md:gap-4 md:overflow-x-auto md:pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
           {articles.map((article) => (
             <Link
               key={article.id}
               to={`/article/${article.slug}`}
-              className="group shrink-0 w-[280px] sm:w-[300px] bg-card rounded-lg border border-border overflow-hidden hover:border-primary/40 transition-colors"
+              className="group min-w-0 md:shrink-0 md:w-[300px] bg-card rounded-lg border border-border overflow-hidden hover:border-primary/40 transition-colors"
             >
               <div className="aspect-[16/10] overflow-hidden">
                 <img
