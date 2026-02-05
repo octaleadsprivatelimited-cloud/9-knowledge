@@ -35,6 +35,7 @@ import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory 
 import { Plus, Edit, Trash, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 
 const generateSlug = (name: string): string => {
   return name
@@ -56,6 +57,7 @@ const CategoriesPage = () => {
     color: '#6366f1',
     is_active: true,
     sort_order: 0,
+    image_url: '',
   });
 
   const { data: categories, isLoading } = useCategories();
@@ -73,6 +75,7 @@ const CategoriesPage = () => {
       color: '#6366f1',
       is_active: true,
       sort_order: categories?.length || 0,
+      image_url: '',
     });
     setDialogOpen(true);
   };
@@ -86,6 +89,7 @@ const CategoriesPage = () => {
       color: category.color || '#6366f1',
       is_active: category.is_active ?? true,
       sort_order: category.sort_order || 0,
+      image_url: category.image_url || '',
     });
     setDialogOpen(true);
   };
@@ -220,8 +224,8 @@ const CategoriesPage = () => {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle>
               {editingCategory ? 'Edit Category' : 'New Category'}
             </DialogTitle>
@@ -230,7 +234,7 @@ const CategoriesPage = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 overflow-y-auto min-h-0 flex-1">
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
               <Input
@@ -248,6 +252,25 @@ const CategoriesPage = () => {
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 placeholder="category-slug"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Category image (homepage card)</Label>
+              <ImageUpload
+                value={formData.image_url || undefined}
+                onChange={(url) => setFormData((prev) => ({ ...prev, image_url: url }))}
+                folder="categories"
+                aspectRatio="square"
+                className="max-h-40"
+              />
+              <p className="text-xs text-muted-foreground">Or paste URL below</p>
+              <Input
+                id="image_url"
+                type="url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                placeholder="https://…"
               />
             </div>
 
@@ -301,11 +324,12 @@ const CategoriesPage = () => {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter className="shrink-0 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button
+              type="button"
               onClick={handleSubmit}
               disabled={createCategory.isPending || updateCategory.isPending}
             >

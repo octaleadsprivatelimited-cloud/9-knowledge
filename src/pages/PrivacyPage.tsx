@@ -1,12 +1,12 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 
 const PrivacyPage = () => {
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <nav className="container py-4 border-b border-border">
+      <nav className="container py-3 border-b border-border">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -18,12 +18,12 @@ const PrivacyPage = () => {
         </ol>
       </nav>
 
-      {/* Content */}
+      <PageHero
+        title="Privacy Policy"
+        subtitle="How we collect, use, and protect your information."
+      />
+
       <article className="container py-12 max-w-4xl mx-auto">
-        <h1 className="text-4xl font-display font-bold text-foreground mb-8">
-          Privacy Policy
-        </h1>
-        
         <div className="prose prose-lg max-w-none text-muted-foreground">
           <p className="text-sm text-muted-foreground mb-8">
             Last updated: January 25, 2025

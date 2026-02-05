@@ -48,16 +48,15 @@ const StatCard = ({
   </Card>
 );
 
-// Mock chart data
-const viewsData = [
-  { name: 'Mon', views: 2400 },
-  { name: 'Tue', views: 1398 },
-  { name: 'Wed', views: 9800 },
-  { name: 'Thu', views: 3908 },
-  { name: 'Fri', views: 4800 },
-  { name: 'Sat', views: 3800 },
-  { name: 'Sun', views: 4300 },
-];
+// Fallback when no daily views yet (last 7 days with 0)
+function getDefaultDailyViews() {
+  const now = new Date();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - (6 - i));
+    return { name: format(d, 'EEE d'), views: 0 };
+  });
+}
 
 const categoryData = [
   { name: 'Technology', value: 35, color: '#3b82f6' },
@@ -142,7 +141,7 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={viewsData}>
+                  <AreaChart data={analytics?.dailyViews?.length ? analytics.dailyViews : getDefaultDailyViews()}>
                     <defs>
                       <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>

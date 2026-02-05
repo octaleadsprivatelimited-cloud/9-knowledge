@@ -1,6 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
-import { collection, query, getDocs, where, orderBy, limit as firestoreLimit } from 'firebase/firestore';
+import { collection, query, getDocs, where, orderBy, limit as firestoreLimit, Timestamp } from 'firebase/firestore';
 import { db } from '@/integrations/firebase/client';
+import { format, subDays, startOfDay } from 'date-fns';
+
+/** Build daily views for last 7 days from reading_analytics (works after deployment). */
+async function fetchDailyViews(): Promise<{ name: string; views: number }[]> {
+  const now = new Date();
+  const start = startOfDay(subDays(now, 6));
+  const startTimestamp = Timestamp.fromDate(start);
+
+  const q = query(
+    collection(db, 'reading_analytics'),
+    where('created_at', '>=', startTimestamp)
+  );
+  const snapshot = await getDocs(q);
+
+  const countsByDay: Record<string, number> = {};
+  for (let i = 0; i < 7; i++) {
+    const d = startOfDay(subDays(now, 6 - i));
+    countsByDay[format(d, 'yyyy-MM-dd')] = 0;
+  }
+
+  snapshot.docs.forEach((docSnap) => {
+    const data = docSnap.data();
+    const createdAt = data.created_at;
+    const date = createdAt?.toDate?.() ?? (createdAt ? new Date(createdAt) : null);
+    if (date) {
+      const key = format(date, 'yyyy-MM-dd');
+      if (countsByDay[key] !== undefined) countsByDay[key]++;
+    }
+  });
+
+  return Object.keys(countsByDay)
+    .sort()
+    .map((key) => ({
+      name: format(new Date(key), 'EEE d'),
+      views: countsByDay[key],
+    }));
+}
 
 export const useAnalytics = () => {
   return useQuery({
@@ -26,6 +63,14 @@ export const useAnalytics = () => {
       );
       const subscribersSnapshot = await getDocs(subscribersQuery);
       const subscriberCount = subscribersSnapshot.size;
+
+      // Daily views for last 7 days (from reading_analytics)
+      let dailyViews: { name: string; views: number }[] = [];
+      try {
+        dailyViews = await fetchDailyViews();
+      } catch (e) {
+        console.warn('Daily views fetch failed:', e);
+      }
 
       // Get recent articles
       const recentArticlesQuery = query(
@@ -71,6 +116,7 @@ export const useAnalytics = () => {
         categoryCount,
         subscriberCount,
         recentArticles,
+        dailyViews,
       };
     },
     refetchInterval: 15_000, // live view counts on dashboard

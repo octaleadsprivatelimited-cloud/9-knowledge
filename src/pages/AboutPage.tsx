@@ -1,12 +1,12 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { ChevronRight, Users, Target, Award, Globe } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 
 const AboutPage = () => {
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <nav className="container py-4 border-b border-border">
+      <nav className="container py-3 border-b border-border">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -18,18 +18,14 @@ const AboutPage = () => {
         </ol>
       </nav>
 
-      {/* Hero */}
-      <header className="container py-16 text-center max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6">
-          About <span className="text-accent">9</span>knowledge
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          We believe in the power of knowledge to transform lives. 9knowledge is a leading 
-          digital media platform dedicated to delivering insightful, accurate, and engaging 
-          content that empowers our readers to make informed decisions in technology, health, 
-          business, and beyond.
-        </p>
-      </header>
+      <PageHero
+        title={
+          <>
+            About <span className="text-white">9</span>knowledge
+          </>
+        }
+        subtitle="We believe in the power of knowledge to transform lives. 9knowledge is a leading digital media platform dedicated to delivering insightful, accurate, and engaging content."
+      />
 
       {/* Values */}
       <section className="container py-12">

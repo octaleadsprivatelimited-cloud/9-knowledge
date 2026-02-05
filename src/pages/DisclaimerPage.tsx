@@ -1,12 +1,12 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { ChevronRight, AlertTriangle } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 
 const DisclaimerPage = () => {
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <nav className="container py-4 border-b border-border">
+      <nav className="container py-3 border-b border-border">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -18,17 +18,18 @@ const DisclaimerPage = () => {
         </ol>
       </nav>
 
-      {/* Content */}
+      <PageHero
+        title="Disclaimer"
+        subtitle="General information and limitations of liability."
+      />
+
       <article className="container py-12 max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-500/10">
-            <AlertTriangle className="h-6 w-6 text-yellow-500" />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-500/10">
+            <AlertTriangle className="h-5 w-5 text-yellow-500" />
           </div>
-          <h1 className="text-4xl font-display font-bold text-foreground">
-            Disclaimer
-          </h1>
+          <span className="text-sm font-medium text-muted-foreground">Legal notice</span>
         </div>
-        
         <div className="prose prose-lg max-w-none text-muted-foreground">
           <p className="text-sm text-muted-foreground mb-8">
             Last updated: January 25, 2025

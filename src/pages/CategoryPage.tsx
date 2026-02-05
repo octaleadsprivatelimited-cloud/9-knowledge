@@ -6,13 +6,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import { useArticlesByCategory } from "@/hooks/usePublicArticles";
+import { PageHero } from "@/components/layout/PageHero";
+
+const normalize = (s: string | undefined) => s?.toLowerCase().trim() ?? '';
 
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
-  const { data: articles, isLoading: articlesLoading } = useArticlesByCategory(slug || '', 20);
-  
-  const category = categories?.find((c) => c.slug === slug);
+  const slugNorm = normalize(slug);
+  const category = categories?.find(
+    (c) => normalize(c.slug) === slugNorm || normalize(c.name) === slugNorm
+  );
+  const { data: articles, isLoading: articlesLoading } = useArticlesByCategory(category?.slug ?? slug ?? '', 20);
   const isLoading = categoriesLoading || articlesLoading;
 
   if (isLoading) {
@@ -48,8 +53,7 @@ const CategoryPage = () => {
 
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <nav className="container py-4 border-b border-border">
+      <nav className="container py-3 border-b border-border">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -57,24 +61,17 @@ const CategoryPage = () => {
             </Link>
           </li>
           <ChevronRight className="h-3 w-3" />
-          <li className="text-foreground font-medium">
-            {category.name}
-          </li>
+          <li className="text-foreground font-medium">{category.name}</li>
         </ol>
       </nav>
 
-      {/* Category Header */}
-      <header className="container py-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
-          {category.name}
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Explore the latest articles and insights about {category.name.toLowerCase()}.
-        </p>
-      </header>
+      <PageHero
+        title={category.name}
+        subtitle={`Explore the latest articles and insights about ${category.name.toLowerCase()}.`}
+      />
 
-      {/* Articles Grid */}
-      <section className="container pb-12">
+      {/* Articles Grid – space between hero and cards */}
+      <section className="container pt-10 sm:pt-12 pb-12">
         {articles && articles.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {articles.map((article, index) => (

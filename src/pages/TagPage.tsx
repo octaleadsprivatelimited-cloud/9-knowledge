@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, Tag } from "lucide-react";
 import { useArticlesByTag, useTagBySlug } from "@/hooks/useTags";
+import { PageHero } from "@/components/layout/PageHero";
 
 const TagPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -47,8 +48,7 @@ const TagPage = () => {
 
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <nav className="container py-4 border-b border-border">
+      <nav className="container py-3 border-b border-border">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -63,19 +63,23 @@ const TagPage = () => {
         </ol>
       </nav>
 
-      {/* Tag Header */}
-      <header className="container py-12 text-center">
-        <Badge variant="secondary" className="mb-4 px-4 py-2 text-base">
-          <Tag className="h-4 w-4 mr-2" />
-          {tag.name}
-        </Badge>
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
-          Articles tagged "{tag.name}"
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+      <PageHero
+        title={
+          <>
+            <span className="inline-flex items-center gap-2">
+              <Tag className="h-8 w-8 sm:h-9 sm:w-9 opacity-90" />
+              {tag.name}
+            </span>
+          </>
+        }
+        subtitle={`Articles tagged "${tag.name}".`}
+      />
+
+      <div className="container py-4 text-center">
+        <p className="text-muted-foreground max-w-2xl mx-auto">
           {articles?.length || 0} article{articles?.length !== 1 ? 's' : ''} found with this tag.
         </p>
-      </header>
+      </div>
 
       {/* Articles Grid */}
       <section className="container pb-12">

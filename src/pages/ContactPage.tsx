@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronRight, Mail } from "lucide-react";
+import { PageHero } from "@/components/layout/PageHero";
 
 const ContactPage = () => {
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <nav className="container py-4 border-b border-border">
+      <nav className="container py-3 border-b border-border">
         <ol className="flex items-center gap-2 text-sm text-muted-foreground">
           <li>
             <Link to="/" className="hover:text-foreground transition-colors">
@@ -21,17 +21,10 @@ const ContactPage = () => {
         </ol>
       </nav>
 
-      {/* Header */}
-      <header className="container py-16 text-center max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-6">
-          Get in Touch
-        </h1>
-        <p className="text-xl text-muted-foreground">
-          Have a question, feedback, or want to collaborate? We'd love to hear from you. 
-          Whether you're a reader, potential contributor, or business partner, our team is 
-          here to help.
-        </p>
-      </header>
+      <PageHero
+        title="Get in Touch"
+        subtitle="Have a question, feedback, or want to collaborate? We'd love to hear from you. Our team is here to help."
+      />
 
       {/* Contact Section */}
       <section className="container pb-16">

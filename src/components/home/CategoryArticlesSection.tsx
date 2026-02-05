@@ -8,33 +8,32 @@ interface CategoryArticlesSectionProps {
     slug: string;
     color?: string | null;
   };
+  /** When true, section is shown even when there are no articles (e.g. Business, Entertainment) */
+  alwaysShow?: boolean;
 }
 
-export function CategoryArticlesSection({ category }: CategoryArticlesSectionProps) {
-  const { data: articles, error, isLoading } = useArticlesByCategory(category.slug, 3, { enabled: !!category.slug });
+export function CategoryArticlesSection({ category, alwaysShow = false }: CategoryArticlesSectionProps) {
+  const { data: articles, error, isLoading } = useArticlesByCategory(category.slug, 4, { enabled: !!category.slug });
   
-  // Debug logging (remove in production if needed)
-  if (process.env.NODE_ENV === 'development') {
-    if (error) {
-      console.warn(`Error loading articles for category ${category.slug}:`, error);
-    }
-    if (articles && articles.length === 0) {
-      console.log(`No articles found for category ${category.slug}`);
-    }
+  if (process.env.NODE_ENV === 'development' && error) {
+    console.warn(`Error loading articles for category ${category.slug}:`, error);
   }
   
-  if (isLoading) {
-    return null; // Don't show anything while loading
+  if (isLoading && !alwaysShow) {
+    return null;
   }
   
-  if (error || !articles || articles.length === 0) {
+  const list = articles ?? [];
+  const hasArticles = list.length > 0;
+  
+  if (!hasArticles && !alwaysShow) {
     return null;
   }
   
   return (
     <CategorySection
       category={category}
-      articles={articles}
+      articles={list}
     />
   );
 }

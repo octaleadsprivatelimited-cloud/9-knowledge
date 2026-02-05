@@ -21,6 +21,10 @@ interface Category {
   description?: string | null;
   is_active?: boolean | null;
   sort_order?: number | null;
+  /** Background/cover image URL for category cards (stored in database) */
+  image_url?: string | null;
+  /** Alternative field name some DBs use */
+  image?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -31,6 +35,7 @@ interface CategoryInsert {
   description?: string | null;
   is_active?: boolean | null;
   sort_order?: number | null;
+  image_url?: string | null;
 }
 
 interface CategoryUpdate extends Partial<CategoryInsert> {
@@ -78,6 +83,13 @@ export const useCategories = () => {
           } as Category);
         });
 
+        // Newest first (admin-created categories show first)
+        categories.sort((a, b) => {
+          const aTime = a.created_at || '';
+          const bTime = b.created_at || '';
+          return bTime.localeCompare(aTime);
+        });
+
         if (import.meta.env.DEV) {
           console.log('Categories loaded:', categories.length);
         }
@@ -106,11 +118,11 @@ export const useCategories = () => {
             } as Category);
           });
 
-          // Sort manually by sort_order
+          // Newest first (admin-created categories show first)
           categories.sort((a, b) => {
-            const aOrder = a.sort_order || 0;
-            const bOrder = b.sort_order || 0;
-            return aOrder - bOrder;
+            const aTime = a.created_at || '';
+            const bTime = b.created_at || '';
+            return bTime.localeCompare(aTime);
           });
 
           return categories;
@@ -124,7 +136,8 @@ export const useCategories = () => {
       }
     },
     retry: 1,
-    staleTime: 10 * 60 * 1000, // Cache categories for 10 minutes (they change less frequently)
+    staleTime: 2 * 60 * 1000, // 2 min cache; invalidated on create/update/delete in admin
+    refetchOnWindowFocus: true, // Header and homepage stay in sync when returning from admin
   });
 };
 
