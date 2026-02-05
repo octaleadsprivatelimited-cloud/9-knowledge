@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SearchModal } from "@/components/search/SearchModal";
 import { useCategories } from "@/hooks/useCategories";
+import { sortCategoriesByDisplayOrder } from "@/lib/categoryOrder";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { data: categories = [] } = useCategories();
+  const { data: categoriesRaw = [] } = useCategories();
+  const categories = sortCategoriesByDisplayOrder(categoriesRaw);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

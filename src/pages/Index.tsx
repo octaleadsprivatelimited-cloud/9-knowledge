@@ -5,34 +5,18 @@ import { WebsiteSchema, OrganizationSchema } from "@/components/seo/StructuredDa
 import { Helmet } from "react-helmet-async";
 import { useLatestArticles } from "@/hooks/usePublicArticles";
 import { useCategories } from "@/hooks/useCategories";
+import { sortCategoriesByDisplayOrder } from "@/lib/categoryOrder";
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Business and Entertainment always show as separate sections (first), even if empty */
-const PRIORITY_SECTION_NAMES = ["Business", "Entertainment"] as const;
+/** These category sections always show on homepage (even with no articles), in display order */
+const ALWAYS_SHOW_SECTIONS = ["News", "National News", "Business", "Entertainment", "Life Style"] as const;
 const normalizeName = (s: string) => s?.toLowerCase().trim() ?? "";
 const isPrioritySection = (name: string) =>
-  PRIORITY_SECTION_NAMES.some((p) => normalizeName(p) === normalizeName(name));
-
-/** Order: Business and Entertainment first, then the rest */
-function orderCategoriesForHome<T extends { name: string }>(categories: T[]): T[] {
-  if (!categories.length) return categories;
-  const priority: T[] = [];
-  const rest: T[] = [];
-  for (const c of categories) {
-    if (isPrioritySection(c.name)) priority.push(c);
-    else rest.push(c);
-  }
-  const ordered = [...priority.sort((a, b) => {
-    const ai = PRIORITY_SECTION_NAMES.findIndex((p) => normalizeName(p) === normalizeName(a.name));
-    const bi = PRIORITY_SECTION_NAMES.findIndex((p) => normalizeName(p) === normalizeName(b.name));
-    return ai - bi;
-  }), ...rest];
-  return ordered;
-}
+  ALWAYS_SHOW_SECTIONS.some((p) => normalizeName(p) === normalizeName(name));
 
 const Index = () => {
   const { data: categoriesRaw = [], error: categoriesError } = useCategories();
-  const categories = orderCategoriesForHome(categoriesRaw);
+  const categories = sortCategoriesByDisplayOrder(categoriesRaw);
   const { data: latestArticles, isLoading: latestLoading, error: latestError } = useLatestArticles(12);
 
   const isLoading = latestLoading;
@@ -82,7 +66,7 @@ const Index = () => {
         <LatestUpdatesStrip articles={latestArticles} />
       )}
 
-      {/* All categories one by one – Business & Entertainment first as separate sections, then rest */}
+      {/* Category sections in order: News, National News, Business, Entertainment, Life Style */}
       {categories && categories.length > 0 && categories.map((category) => (
         <CategoryArticlesSection
           key={category.id}
