@@ -4,10 +4,10 @@
  */
 export const CATEGORY_DISPLAY_ORDER = [
   "News",
-  "National News",
-  "Business",
-  "Entertainment",
   "Life Style",
+  "Entertainment",
+  "Business",
+  "National News",
 ] as const;
 
 /** Normalize for matching: lower case, trim, ignore apostrophes (e.g. "Don't" vs "dont"). */

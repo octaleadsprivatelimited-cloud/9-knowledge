@@ -28,7 +28,7 @@ export function CategorySection({ category, articles }: CategorySectionProps) {
           {articles.map((article) => (
             <Link
               key={article.id}
-              to={`/article/${article.slug}`}
+              to={`/article/${article.slug || article.id}?id=${article.id}`}
               className="group block bg-card rounded-lg border border-border overflow-hidden hover:border-primary/40 transition-colors"
             >
               <div className="aspect-[4/3] overflow-hidden">

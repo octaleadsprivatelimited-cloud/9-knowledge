@@ -32,7 +32,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
   if (variant === "featured") {
     return (
       <article className={cn("group relative overflow-hidden rounded-xl", className)}>
-        <Link to={`/article/${article.slug}`} className="block">
+        <Link to={`/article/${article.slug || article.id}?id=${article.id}`} className="block">
           <div className="aspect-[16/9] overflow-hidden">
             <img
               src={article.featured_image || placeholderImage}
@@ -74,7 +74,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
   if (variant === "horizontal") {
     return (
       <article className={cn("group article-card flex gap-4", className)}>
-        <Link to={`/article/${article.slug}`} className="shrink-0">
+        <Link to={`/article/${article.slug || article.id}?id=${article.id}`} className="shrink-0">
           <div className="w-32 h-24 md:w-48 md:h-32 overflow-hidden rounded-lg">
             <img
               src={article.featured_image || placeholderImage}
@@ -88,7 +88,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
           {article.category && (
             <CategoryBadge category={article.category} className="mb-2 self-start" />
           )}
-          <Link to={`/article/${article.slug}`}>
+          <Link to={`/article/${article.slug || article.id}?id=${article.id}`}>
             <h3 className="font-display font-bold text-foreground mb-1 line-clamp-2 group-hover:text-accent transition-colors">
               {article.title}
             </h3>
@@ -112,7 +112,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
           {String(article.view_count || 0).padStart(2, "0").slice(0, 2)}
         </span>
         <div className="min-w-0">
-          <Link to={`/article/${article.slug}`}>
+          <Link to={`/article/${article.slug || article.id}?id=${article.id}`}>
             <h4 className="font-semibold text-foreground text-sm line-clamp-2 group-hover:text-accent transition-colors">
               {article.title}
             </h4>
@@ -133,7 +133,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
   if (variant === "mobile") {
     return (
       <article className={cn("group article-card bg-card rounded-lg overflow-hidden border border-border", className)}>
-        <Link to={`/article/${article.slug}`} className="block">
+        <Link to={`/article/${article.slug || article.id}?id=${article.id}`} className="block">
           <div className="aspect-[4/3] overflow-hidden">
             <img
               src={article.featured_image || placeholderImage}
@@ -147,7 +147,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
           {article.category && (
             <CategoryBadge category={article.category} size="sm" className="mb-1.5" />
           )}
-          <Link to={`/article/${article.slug}`}>
+          <Link to={`/article/${article.slug || article.id}?id=${article.id}`}>
             <h3 className="font-display font-bold text-sm text-foreground mb-1 line-clamp-2 group-hover:text-accent transition-colors leading-tight">
               {article.title}
             </h3>
@@ -167,7 +167,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
   if (variant === "latest") {
     return (
       <article className={cn("group article-card bg-card rounded-xl overflow-hidden border border-border hover:shadow-lg transition-all duration-300", className)}>
-        <Link to={`/article/${article.slug}`} className="block">
+        <Link to={`/article/${article.slug || article.id}?id=${article.id}`} className="block">
           <div className="aspect-[4/3] relative overflow-hidden">
             <img
               src={article.featured_image || placeholderImage}
@@ -194,7 +194,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
             </div>
           )}
           {/* Article Title */}
-          <Link to={`/article/${article.slug}`}>
+          <Link to={`/article/${article.slug || article.id}?id=${article.id}`}>
             <h3 className="font-display font-bold text-base md:text-lg text-foreground mb-2 line-clamp-2 group-hover:text-accent transition-colors leading-tight">
               {article.title}
             </h3>
@@ -212,7 +212,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
   // Default variant
   return (
     <article className={cn("group article-card bg-card rounded-lg md:rounded-xl overflow-hidden border border-border", className)}>
-      <Link to={`/article/${article.slug}`} className="block">
+      <Link to={`/article/${article.slug || article.id}?id=${article.id}`} className="block">
         <div className="aspect-[4/3] md:aspect-[16/10] overflow-hidden">
           <img
             src={article.featured_image || placeholderImage}
@@ -234,7 +234,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
             </span>
           )}
         </div>
-        <Link to={`/article/${article.slug}`}>
+        <Link to={`/article/${article.slug || article.id}?id=${article.id}`}>
           <h3 className="font-display font-bold text-sm md:text-lg text-foreground mb-1 md:mb-2 line-clamp-2 group-hover:text-accent transition-colors leading-tight">
             {article.title}
           </h3>

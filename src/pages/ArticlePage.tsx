@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { CategoryBadge } from "@/components/articles/CategoryBadge";
 import { ArticleCard } from "@/components/articles/ArticleCard";
@@ -24,7 +24,9 @@ const formatDate = (dateString: string | null) => {
 
 const ArticlePage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { data: article, isLoading } = usePublicArticleBySlug(slug || '');
+  const [searchParams] = useSearchParams();
+  const idFromUrl = searchParams.get('id') || '';
+  const { data: article, isLoading } = usePublicArticleBySlug(slug || '', { id: idFromUrl });
   const { data: latestArticles } = useLatestArticles(4);
 
   // Track reading analytics

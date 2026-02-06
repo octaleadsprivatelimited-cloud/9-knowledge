@@ -76,7 +76,7 @@ export function HeroSection({ featuredArticles, trendingArticles = [] }: HeroSec
                 {trendingNews.map((article) => (
                   <Link
                     key={article.id}
-                    to={`/article/${article.slug}`}
+                    to={`/article/${article.slug || article.id}?id=${article.id}`}
                     className="group relative overflow-hidden rounded-lg bg-card border border-border hover:border-accent/50 transition-all duration-300"
                   >
                     <div className="aspect-[4/3] relative overflow-hidden">
@@ -151,7 +151,7 @@ export function HeroSection({ featuredArticles, trendingArticles = [] }: HeroSec
                 {trendingNews.map((article, index) => (
                   <Link
                     key={article.id}
-                    to={`/article/${article.slug}`}
+                    to={`/article/${article.slug || article.id}?id=${article.id}`}
                     className="group relative overflow-hidden rounded-xl bg-card border border-border hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:scale-105"
                   >
                     <div className="aspect-[4/3] relative overflow-hidden">

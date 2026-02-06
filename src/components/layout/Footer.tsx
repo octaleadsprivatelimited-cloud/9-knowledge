@@ -38,6 +38,9 @@ export function Footer() {
               <Link to="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
                 Terms
               </Link>
+              <Link to="/sitemap.xml" className="text-muted-foreground hover:text-foreground transition-colors">
+                Sitemap
+              </Link>
             </nav>
           </div>
 

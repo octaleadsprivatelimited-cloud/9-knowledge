@@ -9,7 +9,7 @@ import { sortCategoriesByDisplayOrder } from "@/lib/categoryOrder";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** These category sections always show on homepage (even with no articles), in display order */
-const ALWAYS_SHOW_SECTIONS = ["News", "National News", "Business", "Entertainment", "Life Style"] as const;
+const ALWAYS_SHOW_SECTIONS = ["News", "Life Style", "Entertainment", "Business", "National News"] as const;
 const normalizeName = (s: string) => s?.toLowerCase().trim() ?? "";
 const isPrioritySection = (name: string) =>
   ALWAYS_SHOW_SECTIONS.some((p) => normalizeName(p) === normalizeName(name));

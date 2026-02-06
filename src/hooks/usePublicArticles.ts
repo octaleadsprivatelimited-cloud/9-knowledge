@@ -8,8 +8,12 @@ import {
   where,
   orderBy,
   limit as firestoreLimit,
-  Timestamp
+  Timestamp,
+  type DocumentSnapshot
 } from 'firebase/firestore';
+
+// Firestore doc IDs are typically 20 chars alphanumeric
+const looksLikeDocId = (s: string) => /^[a-zA-Z0-9]{19,21}$/.test(s);
 import { db } from '@/integrations/firebase/client';
 
 export interface PublicArticle {
@@ -515,25 +519,73 @@ export const useArticlesByCategory = (categorySlug: string, limit: number = 6, o
   });
 };
 
-export const usePublicArticleBySlug = (slug: string) => {
-  return useQuery({
-    queryKey: ['public-article', slug],
-    queryFn: async () => {
-      const articlesQuery = query(
-        collection(db, 'articles'),
-        where('slug', '==', slug),
-        where('status', '==', 'published'),
-        firestoreLimit(1)
-      );
+// Normalize slug from URL: decode and trim (handles encoding and extra spaces)
+const normalizeSlug = (slug: string): string => {
+  try {
+    return decodeURIComponent(slug || '').trim();
+  } catch {
+    return (slug || '').trim();
+  }
+};
 
-      const snapshot = await getDocs(articlesQuery);
-      
-      if (snapshot.empty) {
-        return null;
+export const usePublicArticleBySlug = (slug: string, options?: { id?: string | null }) => {
+  const normalizedSlug = normalizeSlug(slug || '');
+  const idParam = options?.id?.trim() || '';
+
+  return useQuery({
+    queryKey: ['public-article', normalizedSlug, idParam],
+    queryFn: async () => {
+      if (!db) return null;
+      // Need either slug or id to look up
+      if (!normalizedSlug && !idParam) return null;
+
+      let docSnapshot: DocumentSnapshot | null = null;
+
+      if (normalizedSlug) {
+        let articlesQuery = query(
+          collection(db, 'articles'),
+          where('slug', '==', normalizedSlug),
+          firestoreLimit(1)
+        );
+        let snapshot = await getDocs(articlesQuery);
+
+        if (snapshot.empty && normalizedSlug !== normalizedSlug.toLowerCase()) {
+          articlesQuery = query(
+            collection(db, 'articles'),
+            where('slug', '==', normalizedSlug.toLowerCase()),
+            firestoreLimit(1)
+          );
+          snapshot = await getDocs(articlesQuery);
+        }
+
+        if (!snapshot.empty) docSnapshot = snapshot.docs[0];
+        if (!docSnapshot && looksLikeDocId(normalizedSlug)) {
+          const byId = await getDoc(doc(db, 'articles', normalizedSlug));
+          if (byId.exists()) docSnapshot = byId;
+        }
       }
 
-      return await convertToPublicArticle(snapshot.docs[0]);
+      // Fallback: load by document ID (from ?id= in URL or when slug failed)
+      if (!docSnapshot && idParam) {
+        const byId = await getDoc(doc(db, 'articles', idParam));
+        if (byId.exists()) docSnapshot = byId;
+      }
+
+      if (!docSnapshot) return null;
+
+      const data = docSnapshot.data();
+      const status = (data.status || '').toString().toLowerCase();
+      const isPublished = status === 'published';
+      const scheduledAt = data.scheduled_at;
+      const isScheduledAndDue =
+        status === 'scheduled' &&
+        scheduledAt &&
+        new Date(scheduledAt?.toDate ? scheduledAt.toDate() : scheduledAt) <= new Date();
+
+      if (!isPublished && !isScheduledAndDue) return null;
+
+      return await convertToPublicArticle(docSnapshot);
     },
-    enabled: !!slug,
+    enabled: !!normalizedSlug || !!idParam,
   });
 };

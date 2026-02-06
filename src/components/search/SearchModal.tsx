@@ -124,7 +124,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   {results.map((result) => (
                     <li key={result.id}>
                       <Link
-                        to={`/article/${result.slug}`}
+                        to={`/article/${result.slug || result.id}?id=${result.id}`}
                         onClick={onClose}
                         className="flex gap-4 p-3 rounded-lg hover:bg-muted transition-colors group"
                       >

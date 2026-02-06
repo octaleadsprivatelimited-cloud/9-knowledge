@@ -14,4 +14,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://ycsvgcvrknipvvrbjond.supabase.co/functions/v1/sitemap
+Sitemap: https://9knowledge.com/sitemap.xml
