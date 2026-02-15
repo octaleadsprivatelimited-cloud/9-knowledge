@@ -4,11 +4,11 @@ const SCRIPT_ID = "google-translate-script";
 const SCRIPT_URL = "https://translate.google.com/translate_a/element.js";
 const ELEMENT_ID = "google_translate_element";
 
-/** Only these three languages; value is target lang code (empty = English/original). */
+/** Only these three languages; value is target lang code (empty = Telugu/original). */
 const LANGUAGES = [
-  { value: "", label: "English", lang: "en" },
-  { value: "te", label: "తెలుగు", lang: "te" },
-  { value: "hi", label: "हिन्दी", lang: "hi" },
+  { value: "", label: "తెలుగు", lang: "te" },      // Original language (Telugu)
+  { value: "en", label: "English", lang: "en" },    // Translate to English
+  { value: "hi", label: "हिन्दी", lang: "hi" },    // Translate to Hindi
 ] as const;
 
 const COOKIE_NAME = "googtrans";
@@ -17,15 +17,16 @@ function getCurrentLang(): string {
   if (typeof document === "undefined") return "";
   const match = document.cookie.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
   const val = match ? decodeURIComponent(match[1].trim()) : "";
-  // Cookie is /en/te or /en/hi; we want "te" or "hi" or "" for English
-  if (val === "/en/te") return "te";
-  if (val === "/en/hi") return "hi";
-  return "";
+  // Cookie format: /te/en (Telugu to English) or /te/hi (Telugu to Hindi)
+  // Extract target language (after second slash)
+  if (val === "/te/en") return "en";    // Telugu → English
+  if (val === "/te/hi") return "hi";    // Telugu → Hindi
+  return "";  // No translation (original Telugu)
 }
 
 /**
- * Re-apply Google Translate to the page after dynamic content (e.g. article body) has been rendered.
- * Call from ArticlePage when article content is ready so the body gets translated.
+ * Force complete page re-translation for dynamically loaded content.
+ * This is the nuclear option that works reliably for article pages.
  */
 export function triggerTranslateForDynamicContent(): void {
   const lang = getCurrentLang();
@@ -33,70 +34,80 @@ export function triggerTranslateForDynamicContent(): void {
   // If no language selected (English), no need to trigger
   if (!lang) return;
   
-  const tryTrigger = (attempt = 0) => {
+  // Strategy: Tell Google Translate to restore original, then translate again
+  // This ensures the full page gets translated, not just cached elements
+  const forceRetranslate = (attempt = 0) => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     
     if (!select) {
-      // Retry up to 10 times with exponential backoff
-      if (attempt < 10) {
-        setTimeout(() => tryTrigger(attempt + 1), 300 * (attempt + 1));
-      } else {
-        console.warn("Google Translate widget not found after 10 attempts");
+      if (attempt < 15) {
+        setTimeout(() => forceRetranslate(attempt + 1), 200 * (attempt + 1));
       }
       return;
     }
     
-    // Check if Google Translate is actually ready
     if (!window.google?.translate) {
-      if (attempt < 10) {
-        setTimeout(() => tryTrigger(attempt + 1), 300 * (attempt + 1));
+      if (attempt < 15) {
+        setTimeout(() => forceRetranslate(attempt + 1), 200 * (attempt + 1));
       }
       return;
     }
     
-    // Set to target language
-    select.value = lang;
+    // Step 1: Reset to English (original)
+    select.value = "";
     select.dispatchEvent(new Event("change", { bubbles: true }));
     
-    // Force a second trigger to ensure it applies
+    // Step 2: Wait a moment, then translate to target language
     setTimeout(() => {
-      const selectAgain = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-      if (selectAgain && selectAgain.value !== lang) {
-        selectAgain.value = lang;
-        selectAgain.dispatchEvent(new Event("change", { bubbles: true }));
+      const sel = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+      if (sel) {
+        sel.value = lang;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+        
+        // Step 3: Triple-trigger for maximum reliability
+        setTimeout(() => {
+          const finalSel = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+          if (finalSel) {
+            finalSel.value = lang;
+            finalSel.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }, 800);
       }
-    }, 500);
+    }, 400);
   };
   
-  // Wait for Google Translate script to be ready
-  setTimeout(() => tryTrigger(0), 500);
+  // Wait for content to be in DOM, then trigger
+  setTimeout(() => forceRetranslate(0), 1000);
 }
 
-function setLanguage(code: "" | "te" | "hi") {
+function setLanguage(code: "" | "en" | "hi") {
   if (code === "") {
-    // Clear all Google Translate cookies to return to English
+    // Return to original Telugu - clear all translation
     const hostname = window.location.hostname;
     const domain = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
+    const rootDomain = domain.split('.').slice(-2).join('.');
     
-    // Clear cookies with different variations
-    document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
-    document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; domain=${hostname}`;
-    document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; domain=.${domain}`;
+    // Clear ALL possible cookie variations
+    const cookieNames = ['googtrans', COOKIE_NAME];
+    const domains = ['', hostname, `.${hostname}`, domain, `.${domain}`, rootDomain, `.${rootDomain}`];
     
-    // Set to English explicitly before reload
-    const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-    if (select) {
-      select.value = "";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-    }
+    cookieNames.forEach(name => {
+      domains.forEach(dom => {
+        const domainStr = dom ? `; domain=${dom}` : '';
+        document.cookie = `${name}=; path=/; max-age=0${domainStr}`;
+      });
+    });
+    
+    // Hard reload to original Telugu
+    window.location.replace(window.location.pathname + window.location.search);
   } else {
-    document.cookie = `${COOKIE_NAME}=/en/${code}; path=/`;
+    // Translate FROM Telugu TO target language
+    document.cookie = `${COOKIE_NAME}=/te/${code}; path=/`;  // Changed from /en/ to /te/
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   }
-  
-  // Force hard reload to ensure translation clears
-  setTimeout(() => {
-    window.location.reload();
-  }, 100);
 }
 
 declare global {
@@ -132,7 +143,7 @@ export function GoogleTranslate() {
         try {
           new window.google.translate.TranslateElement(
             { 
-              pageLanguage: "en", 
+              pageLanguage: "te",  // Changed from "en" to "te" - Telugu is the source language
               includedLanguages: "en,te,hi",
               layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE 
             },

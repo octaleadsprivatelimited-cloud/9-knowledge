@@ -184,7 +184,9 @@ export const usePublishedArticles = () => {
         }
         // If orderBy fails, try without orderBy
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-          console.warn('Published articles: orderBy failed, trying without orderBy:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Published articles: orderBy failed, trying without orderBy:', error.message);
+          }
           
           const articlesQuery = query(
             collection(db, 'articles'),
@@ -251,7 +253,9 @@ export const useFeaturedArticles = () => {
       } catch (error: any) {
         // If orderBy fails (likely missing index), try without orderBy
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-          console.warn('Featured articles: orderBy failed, trying without orderBy:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Featured articles: orderBy failed, trying without orderBy:', error.message);
+          }
           
           const articlesQuery = query(
             collection(db, 'articles'),
@@ -321,7 +325,9 @@ export const useTrendingArticles = () => {
       } catch (error: any) {
         // If orderBy fails (likely missing index), try without orderBy
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-          console.warn('Trending articles: orderBy failed, trying without orderBy:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Trending articles: orderBy failed, trying without orderBy:', error.message);
+          }
           
           const articlesQuery = query(
             collection(db, 'articles'),
@@ -407,7 +413,9 @@ export const useLatestArticles = (limit: number = 9) => {
           return [];
         }
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-          console.warn('Latest articles: orderBy failed, trying without orderBy:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Latest articles: orderBy failed, trying without orderBy:', error.message);
+          }
 
           const articlesQuery = query(
             collection(db, 'articles'),
@@ -498,7 +506,9 @@ export const useArticlesByCategory = (categorySlug: string, limit: number = 6, o
           return [];
         }
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-          console.warn('Articles by category: orderBy failed, trying without orderBy:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Articles by category: orderBy failed, trying without orderBy:', error.message);
+          }
           try {
             const categoriesQuery = query(
               collection(db, 'categories'),

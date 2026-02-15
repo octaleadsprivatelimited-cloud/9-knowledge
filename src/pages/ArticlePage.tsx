@@ -45,7 +45,7 @@ const ArticlePage = () => {
       // Wait for article content to be fully rendered in DOM before triggering translation
       const timer = setTimeout(() => {
         triggerTranslateForDynamicContent();
-      }, 800); // Increased delay to ensure content is rendered
+      }, 1500); // Longer delay for full DOM rendering and Google Translate readiness
       
       return () => clearTimeout(timer);
     }
@@ -215,6 +215,8 @@ const ArticlePage = () => {
             </aside>
             <div className="flex-1 min-w-0">
               <div
+                id="article-content"
+                lang="en"
                 className="article-content prose prose-sm sm:prose max-w-none text-foreground text-[15px] leading-[1.7] prose-p:my-3 prose-headings:font-display prose-headings:font-bold prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-2 prose-h3:text-base prose-h3:mt-6 prose-h3:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-0.5 prose-img:rounded-lg prose-img:w-full prose-img:my-4 prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/40 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r prose-blockquote:not-italic"
                 dangerouslySetInnerHTML={{ __html: article.content || '' }}
               />

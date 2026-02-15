@@ -98,7 +98,9 @@ export const useCategories = () => {
       } catch (error: any) {
         // If orderBy fails, try without orderBy
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
-          console.warn('Categories: orderBy failed, trying without orderBy:', error.message);
+          if (import.meta.env.DEV) {
+            console.warn('Categories: orderBy failed, trying without orderBy:', error.message);
+          }
           
           const categoriesQuery = query(
             collection(db, 'categories'),
