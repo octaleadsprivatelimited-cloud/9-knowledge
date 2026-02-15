@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AdSlot from "@/components/ads/AdSlot";
 import { ArticleSchema, BreadcrumbSchema } from "@/components/seo/StructuredData";
-import { Clock, Calendar, Eye, ChevronRight } from "lucide-react";
+import { Clock, Calendar, Eye, ChevronRight, Languages } from "lucide-react";
 import { usePublicArticleBySlug, useLatestArticles } from "@/hooks/usePublicArticles";
 import { useReadingAnalytics } from "@/hooks/useReadingAnalytics";
-import { triggerTranslateForDynamicContent } from "@/components/GoogleTranslate";
+import { triggerTranslateForDynamicContent, GoogleTranslate } from "@/components/GoogleTranslate";
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '';
@@ -147,9 +147,18 @@ const ArticlePage = () => {
         {/* Article Header + Image in one flow */}
         <div className="container max-w-3xl mx-auto px-4">
           <header className="pt-8 pb-6">
-            {article.category && (
-              <CategoryBadge category={article.category} size="md" className="mb-3" />
-            )}
+            <div className="flex items-start justify-between gap-4 mb-3">
+              <div className="flex-1">
+                {article.category && (
+                  <CategoryBadge category={article.category} size="md" className="mb-3" />
+                )}
+              </div>
+              {/* Language Translator for Article */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border">
+                <Languages className="h-4 w-4 text-muted-foreground" />
+                <GoogleTranslate />
+              </div>
+            </div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-foreground leading-snug break-words">
               {article.title}
             </h1>
