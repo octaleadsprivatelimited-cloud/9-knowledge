@@ -113,7 +113,7 @@ const ArticlePage = () => {
           slug: article.slug,
         }}
         url={shareUrl}
-        keywords={article.meta_keywords?.length ? article.meta_keywords : undefined}
+        keywords={Array.isArray(article.meta_keywords) && article.meta_keywords.length > 0 ? article.meta_keywords : undefined}
         metaTitle={article.meta_title}
         metaDescription={article.meta_description}
       />
@@ -157,7 +157,7 @@ const ArticlePage = () => {
             {article.category && (
               <CategoryBadge category={article.category} size="md" className="mb-3" />
             )}
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-foreground leading-snug break-words">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-foreground leading-snug break-words" lang="te">
               {article.title}
             </h1>
             {article.excerpt && (
