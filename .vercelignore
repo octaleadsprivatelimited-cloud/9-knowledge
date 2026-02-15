@@ -1,0 +1,61 @@
+# Vercel Ignore File
+# These files/folders will not be uploaded to Vercel
+
+# Dependencies
+node_modules
+
+# Development files
+.env.local
+.env.development
+.env.test
+*.log
+
+# Build caches
+.vite
+.cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (optional - remove if you want these deployed)
+*.md
+!README.md
+
+# Test files
+**/*.test.*
+**/*.spec.*
+__tests__
+coverage
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD (if not needed)
+.github
+.gitlab-ci.yml
+
+# Note: Build config files ARE needed by Vercel during build
+# Do NOT ignore: tsconfig.json, vite.config.ts, postcss.config.js, tailwind.config.ts
+# Only ignore editor-specific configs
+eslint.config.js
+components.json
+
+# Firebase
+firestore.rules
+.firebase
+firebase-debug.log
+FIREBASE_SETUP.md
+
+# Other
+.htaccess
+nginx.conf
+bun.lockb

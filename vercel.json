@@ -1,7 +1,11 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "npm install",
   "rewrites": [
     {
-      "source": "/((?!sitemap\\.xml$|robots\\.txt$).*)",
+      "source": "/((?!assets/)(?!_vercel)(?!sitemap\\.xml$)(?!robots\\.txt$).*)",
       "destination": "/index.html"
     }
   ],
