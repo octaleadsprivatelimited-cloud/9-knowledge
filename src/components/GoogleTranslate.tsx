@@ -29,17 +29,47 @@ function getCurrentLang(): string {
  */
 export function triggerTranslateForDynamicContent(): void {
   const lang = getCurrentLang();
+  
+  // If no language selected (English), no need to trigger
+  if (!lang) return;
+  
   const tryTrigger = (attempt = 0) => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+    
     if (!select) {
-      if (attempt < 5) setTimeout(() => tryTrigger(attempt + 1), 200 * (attempt + 1));
+      // Retry up to 10 times with exponential backoff
+      if (attempt < 10) {
+        setTimeout(() => tryTrigger(attempt + 1), 300 * (attempt + 1));
+      } else {
+        console.warn("Google Translate widget not found after 10 attempts");
+      }
       return;
     }
-    // Set to target language or empty for English
-    select.value = lang || "";
+    
+    // Check if Google Translate is actually ready
+    if (!window.google?.translate) {
+      if (attempt < 10) {
+        setTimeout(() => tryTrigger(attempt + 1), 300 * (attempt + 1));
+      }
+      return;
+    }
+    
+    // Set to target language
+    select.value = lang;
     select.dispatchEvent(new Event("change", { bubbles: true }));
+    
+    // Force a second trigger to ensure it applies
+    setTimeout(() => {
+      const selectAgain = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+      if (selectAgain && selectAgain.value !== lang) {
+        selectAgain.value = lang;
+        selectAgain.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }, 500);
   };
-  setTimeout(() => tryTrigger(0), 150);
+  
+  // Wait for Google Translate script to be ready
+  setTimeout(() => tryTrigger(0), 500);
 }
 
 function setLanguage(code: "" | "te" | "hi") {
@@ -101,10 +131,24 @@ export function GoogleTranslate() {
       if (el && window.google?.translate) {
         try {
           new window.google.translate.TranslateElement(
-            { pageLanguage: "en", layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE },
+            { 
+              pageLanguage: "en", 
+              includedLanguages: "en,te,hi",
+              layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE 
+            },
             ELEMENT_ID
           );
-        } catch (_) {}
+          
+          // After initialization, apply translation if language is selected
+          setTimeout(() => {
+            const lang = getCurrentLang();
+            if (lang) {
+              triggerTranslateForDynamicContent();
+            }
+          }, 1000);
+        } catch (e) {
+          console.error("Google Translate initialization error:", e);
+        }
       }
     };
 
@@ -117,9 +161,9 @@ export function GoogleTranslate() {
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
     script.src = `${SCRIPT_URL}?cb=googleTranslateElementInit`;
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
+    script.async = false; // Load synchronously to ensure it's ready
+    document.head.appendChild(script); // Add to head for priority
+    
     return () => {
       delete window.googleTranslateElementInit;
     };
@@ -158,10 +202,23 @@ export function GoogleTranslate() {
           </svg>
         </span>
       </label>
-      {/* Hide Google's banner after translation */}
+      {/* Hide Google's banner after translation and fix layout issues */}
       <style>{`
-        .goog-te-banner-frame.skiptranslate { display: none !important; }
-        body.top { top: 0 !important; }
+        .goog-te-banner-frame.skiptranslate { 
+          display: none !important; 
+        }
+        body { 
+          top: 0 !important; 
+          position: static !important;
+        }
+        /* Ensure translated text is visible */
+        font[style*="vertical-align: inherit;"] {
+          vertical-align: baseline !important;
+        }
+        /* Fix for translated content */
+        .translated-ltr {
+          direction: ltr !important;
+        }
       `}</style>
     </>
   );

@@ -41,7 +41,14 @@ const ArticlePage = () => {
 
   // Re-apply Google Translate when article content is rendered (dynamic content is not translated on load)
   useEffect(() => {
-    if (article) triggerTranslateForDynamicContent();
+    if (article) {
+      // Wait for article content to be fully rendered in DOM before triggering translation
+      const timer = setTimeout(() => {
+        triggerTranslateForDynamicContent();
+      }, 800); // Increased delay to ensure content is rendered
+      
+      return () => clearTimeout(timer);
+    }
   }, [article]);
 
   if (isLoading) {
