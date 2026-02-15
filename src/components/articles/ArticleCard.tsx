@@ -1,7 +1,9 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Clock, Eye, TrendingUp, ArrowUp } from "lucide-react";
 import { CategoryBadge } from "./CategoryBadge";
 import { cn } from "@/lib/utils";
+import { formatRelativeDate } from "@/lib/dateUtils";
 import type { PublicArticle } from "@/hooks/usePublicArticles";
 
 interface ArticleCardProps {
@@ -10,23 +12,7 @@ interface ArticleCardProps {
   className?: string;
 }
 
-const formatRelativeDate = (dateString: string | null) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-  
-  if (diffInHours < 1) return "Just now";
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  if (diffInHours < 48) return "Yesterday";
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
-
-export function ArticleCard({ article, variant = "default", className }: ArticleCardProps) {
+function ArticleCardComponent({ article, variant = "default", className }: ArticleCardProps) {
   const placeholderImage = "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop";
 
   if (variant === "featured") {
@@ -39,6 +25,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
               alt={article.featured_image_alt || article.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent" />
@@ -81,6 +68,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
               alt={article.featured_image_alt || article.title}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           </div>
         </Link>
@@ -140,6 +128,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
               alt={article.featured_image_alt || article.title}
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           </div>
         </Link>
@@ -174,6 +163,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
               alt={article.featured_image_alt || article.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
               loading="lazy"
+              decoding="async"
             />
             {/* Hot Badge - Top Right */}
             {(article.is_trending || article.is_featured) && (
@@ -219,6 +209,7 @@ export function ArticleCard({ article, variant = "default", className }: Article
             alt={article.featured_image_alt || article.title}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
+            decoding="async"
           />
         </div>
       </Link>
@@ -255,3 +246,5 @@ export function ArticleCard({ article, variant = "default", className }: Article
     </article>
   );
 }
+
+export const ArticleCard = memo(ArticleCardComponent);

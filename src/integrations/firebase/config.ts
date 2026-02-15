@@ -78,12 +78,20 @@ try {
     db = getFirestore(app);
     storage = getStorage(app);
     
-    // Initialize Analytics only in browser environment
+    // Defer Analytics so it doesn't block first paint
     if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
-      try {
-        analytics = getAnalytics(app);
-      } catch (analyticsError) {
-        console.warn('Analytics initialization failed:', analyticsError);
+      const initAnalytics = () => {
+        try {
+          analytics = getAnalytics(app!);
+          if (import.meta.env.DEV) console.log('✅ Firebase Analytics initialized');
+        } catch (e) {
+          console.warn('Analytics initialization failed:', e);
+        }
+      };
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(initAnalytics, { timeout: 2000 });
+      } else {
+        setTimeout(initAnalytics, 500);
       }
     }
 

@@ -60,7 +60,10 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm animate-in fade-in-0"
       onClick={handleBackdropClick}
     >
-      <div className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl">
+      <div
+        className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div
           ref={modalRef}
           className="bg-background border rounded-xl shadow-2xl animate-in slide-in-from-top-4 fade-in-0 duration-300"

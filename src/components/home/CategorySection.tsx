@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { PublicArticle } from "@/hooks/usePublicArticles";
 
@@ -14,7 +15,7 @@ interface CategorySectionProps {
 const placeholderImage = "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop";
 
 /** Boldsky-style: section heading + row of article cards (image, title, category) */
-export function CategorySection({ category, articles }: CategorySectionProps) {
+function CategorySectionComponent({ category, articles }: CategorySectionProps) {
   return (
     <section className="border-b border-border py-8">
       <div className="container">
@@ -37,6 +38,7 @@ export function CategorySection({ category, articles }: CategorySectionProps) {
                   alt={article.featured_image_alt || article.title}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div className="p-3">
@@ -59,3 +61,5 @@ export function CategorySection({ category, articles }: CategorySectionProps) {
     </section>
   );
 }
+
+export const CategorySection = memo(CategorySectionComponent);

@@ -1,3 +1,4 @@
+import { useMemo, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { LatestUpdatesStrip } from "@/components/home/LatestUpdatesStrip";
 import { CategoryArticlesSection } from "@/components/home/CategoryArticlesSection";
@@ -5,8 +6,10 @@ import { WebsiteSchema, OrganizationSchema } from "@/components/seo/StructuredDa
 import { Helmet } from "react-helmet-async";
 import { useLatestArticles } from "@/hooks/usePublicArticles";
 import { useCategories } from "@/hooks/useCategories";
+import { useCategoryDisplayOrder } from "@/hooks/useCategoryDisplayOrder";
 import { sortCategoriesByDisplayOrder } from "@/lib/categoryOrder";
 import { Skeleton } from "@/components/ui/skeleton";
+import { triggerTranslateForDynamicContent } from "@/components/GoogleTranslate";
 
 /** These category sections always show on homepage (even with no articles), in display order */
 const ALWAYS_SHOW_SECTIONS = ["News", "Life Style", "Entertainment", "Business", "National News"] as const;
@@ -16,35 +19,23 @@ const isPrioritySection = (name: string) =>
 
 const Index = () => {
   const { data: categoriesRaw = [], error: categoriesError } = useCategories();
-  const categories = sortCategoriesByDisplayOrder(categoriesRaw);
-  const { data: latestArticles, isLoading: latestLoading, error: latestError } = useLatestArticles(12);
+  const { data: displayOrder = [] } = useCategoryDisplayOrder();
+  const categories = useMemo(
+    () => sortCategoriesByDisplayOrder(categoriesRaw, displayOrder.length ? displayOrder : undefined),
+    [categoriesRaw, displayOrder]
+  );
+  const { data: latestArticles, isLoading: latestLoading, error: latestError } = useLatestArticles(6);
 
-  const isLoading = latestLoading;
   const hasError = latestError || categoriesError;
+
+  // Re-apply Google Translate when homepage content is ready (e.g. after selecting language and reloading)
+  useEffect(() => {
+    if (!latestLoading) triggerTranslateForDynamicContent();
+  }, [latestLoading]);
 
   if (import.meta.env.DEV) {
     if (latestError) console.error("Latest articles error:", latestError);
     if (categoriesError) console.error("Categories error:", categoriesError);
-  }
-
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="container py-8 space-y-8">
-          <Skeleton className="h-8 w-48" />
-          <div className="flex gap-4 overflow-hidden">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-[200px] w-[280px] shrink-0 rounded-lg" />
-            ))}
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="h-[180px] rounded-lg" />
-            ))}
-          </div>
-        </div>
-      </Layout>
-    );
   }
 
   return (
@@ -61,10 +52,21 @@ const Index = () => {
       <WebsiteSchema />
       <OrganizationSchema />
 
-      {/* Latest Updates strip */}
-      {latestArticles && latestArticles.length > 0 && (
+      {/* Latest Updates strip - skeleton while loading so page shell appears fast */}
+      {latestLoading ? (
+        <section className="border-b border-border bg-muted/30">
+          <div className="container py-4">
+            <Skeleton className="h-6 w-40 mb-4" />
+            <div className="flex gap-3 md:gap-4 overflow-hidden">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-[140px] w-full min-w-[200px] max-w-[300px] rounded-lg shrink-0" />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : latestArticles && latestArticles.length > 0 ? (
         <LatestUpdatesStrip articles={latestArticles} />
-      )}
+      ) : null}
 
       {/* Category sections in order: News, National News, Business, Entertainment, Life Style */}
       {categories && categories.length > 0 && categories.map((category) => (
@@ -75,7 +77,7 @@ const Index = () => {
         />
       ))}
 
-      {hasError && !isLoading && (
+      {hasError && !latestLoading && (
         <div className="container py-16 text-center">
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-destructive mb-4">Error Loading Content</h2>
@@ -86,7 +88,7 @@ const Index = () => {
         </div>
       )}
 
-      {!hasError && (!latestArticles || latestArticles.length === 0) && !isLoading && (
+      {!hasError && (!latestArticles || latestArticles.length === 0) && !latestLoading && (
         <div className="container py-16 text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">No Articles Yet</h2>
           <p className="text-muted-foreground">Check back soon for new content!</p>

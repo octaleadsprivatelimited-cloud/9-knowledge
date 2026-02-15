@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CategorySection } from "@/components/home/CategorySection";
 import { useArticlesByCategory } from "@/hooks/usePublicArticles";
 
@@ -12,7 +13,7 @@ interface CategoryArticlesSectionProps {
   alwaysShow?: boolean;
 }
 
-export function CategoryArticlesSection({ category, alwaysShow = false }: CategoryArticlesSectionProps) {
+function CategoryArticlesSectionComponent({ category, alwaysShow = false }: CategoryArticlesSectionProps) {
   const { data: articles, error, isLoading } = useArticlesByCategory(category.slug, 4, { enabled: !!category.slug });
   
   if (process.env.NODE_ENV === 'development' && error) {
@@ -37,3 +38,5 @@ export function CategoryArticlesSection({ category, alwaysShow = false }: Catego
     />
   );
 }
+
+export const CategoryArticlesSection = memo(CategoryArticlesSectionComponent);

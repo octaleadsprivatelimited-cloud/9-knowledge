@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { CategoryBadge } from "@/components/articles/CategoryBadge";
@@ -11,6 +12,7 @@ import { ArticleSchema, BreadcrumbSchema } from "@/components/seo/StructuredData
 import { Clock, Calendar, Eye, ChevronRight } from "lucide-react";
 import { usePublicArticleBySlug, useLatestArticles } from "@/hooks/usePublicArticles";
 import { useReadingAnalytics } from "@/hooks/useReadingAnalytics";
+import { triggerTranslateForDynamicContent } from "@/components/GoogleTranslate";
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '';
@@ -36,6 +38,11 @@ const ArticlePage = () => {
   const relatedArticles = latestArticles?.filter(
     (a) => a.id !== article?.id && a.category?.id === article?.category?.id
   ).slice(0, 3) || [];
+
+  // Re-apply Google Translate when article content is rendered (dynamic content is not translated on load)
+  useEffect(() => {
+    if (article) triggerTranslateForDynamicContent();
+  }, [article]);
 
   if (isLoading) {
     return (
@@ -85,7 +92,7 @@ const ArticlePage = () => {
 
   return (
     <Layout>
-      {/* Structured Data for SEO */}
+      {/* Structured Data for SEO + meta keywords, meta title/description */}
       <ArticleSchema 
         article={{
           title: article.title,
@@ -99,6 +106,9 @@ const ArticlePage = () => {
           slug: article.slug,
         }}
         url={shareUrl}
+        keywords={article.meta_keywords?.length ? article.meta_keywords : undefined}
+        metaTitle={article.meta_title}
+        metaDescription={article.meta_description}
       />
       <BreadcrumbSchema items={breadcrumbItems} />
 

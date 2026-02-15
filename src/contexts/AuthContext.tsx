@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   User as FirebaseUser,
   signInWithEmailAndPassword,
@@ -112,20 +112,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!auth) {
       return { error: new Error('Firebase is not configured. Please set up your Firebase credentials.') };
     }
-    
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { error: null };
     } catch (error: any) {
       return { error: new Error(error.message || 'Failed to sign in') };
     }
-  };
+  }, [auth]);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
     if (!auth || !db) {
       return { error: new Error('Firebase is not configured. Please set up your Firebase credentials.') };
     }
@@ -157,40 +156,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       return { error: new Error(error.message || 'Failed to sign up') };
     }
-  };
+  }, [auth, db]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (!auth) return;
-    
     try {
       await firebaseSignOut(auth);
       setRole(null);
     } catch (error) {
       console.error('Error signing out:', error);
     }
-  };
+  }, [auth]);
 
   const isAdmin = role === 'super_admin' || role === 'editor' || role === 'author';
   const isSuperAdmin = role === 'super_admin';
   const isEditor = role === 'editor' || role === 'super_admin';
   const isAuthor = role === 'author' || role === 'editor' || role === 'super_admin';
 
+  const value = useMemo(
+    () => ({
+      user,
+      session,
+      loading,
+      role,
+      isAdmin,
+      isSuperAdmin,
+      isEditor,
+      isAuthor,
+      signIn,
+      signUp,
+      signOut,
+    }),
+    [user, session, loading, role, isAdmin, isSuperAdmin, isEditor, isAuthor, signIn, signUp, signOut]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        loading,
-        role,
-        isAdmin,
-        isSuperAdmin,
-        isEditor,
-        isAuthor,
-        signIn,
-        signUp,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

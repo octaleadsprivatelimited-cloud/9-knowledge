@@ -21,9 +21,23 @@ interface Article {
 interface ArticleSchemaProps {
   article: Article;
   url: string;
+  /** Comma-separated or array of keywords for meta keywords tag */
+  keywords?: string | string[] | null;
+  /** Override meta title (e.g. from article.meta_title) */
+  metaTitle?: string | null;
+  /** Override meta description (e.g. from article.meta_description) */
+  metaDescription?: string | null;
 }
 
-export const ArticleSchema = ({ article, url }: ArticleSchemaProps) => {
+export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle, metaDescription }: ArticleSchemaProps) => {
+  const title = metaTitle?.trim() || article.title;
+  const description = metaDescription?.trim() || article.excerpt;
+  const keywordsStr = Array.isArray(keywordsProp)
+    ? keywordsProp.filter(Boolean).join(', ')
+    : typeof keywordsProp === 'string'
+      ? keywordsProp.trim()
+      : '';
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -52,6 +66,7 @@ export const ArticleSchema = ({ article, url }: ArticleSchemaProps) => {
     "articleSection": article.category.name,
     "wordCount": article.content ? article.content.split(/\s+/).length : undefined,
     "timeRequired": article.readingTime ? `PT${article.readingTime}M` : undefined,
+    ...(keywordsStr ? { keywords: keywordsStr } : {}),
   };
 
   // Remove undefined values
@@ -66,8 +81,8 @@ export const ArticleSchema = ({ article, url }: ArticleSchemaProps) => {
 
       {/* Open Graph */}
       <meta property="og:type" content="article" />
-      <meta property="og:title" content={article.title} />
-      <meta property="og:description" content={article.excerpt} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
       <meta property="og:image" content={article.featuredImage} />
       <meta property="og:url" content={url} />
       <meta property="article:published_time" content={article.publishedAt} />
@@ -77,13 +92,14 @@ export const ArticleSchema = ({ article, url }: ArticleSchemaProps) => {
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={article.title} />
-      <meta name="twitter:description" content={article.excerpt} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={article.featuredImage} />
 
       {/* Standard Meta */}
-      <title>{article.title} | 9knowledge</title>
-      <meta name="description" content={article.excerpt} />
+      <title>{title} | 9knowledge</title>
+      <meta name="description" content={description} />
+      {keywordsStr ? <meta name="keywords" content={keywordsStr} /> : null}
       <link rel="canonical" href={url} />
     </Helmet>
   );

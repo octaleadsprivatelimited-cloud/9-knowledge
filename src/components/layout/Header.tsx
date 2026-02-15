@@ -1,17 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SearchModal } from "@/components/search/SearchModal";
+import { GoogleTranslate } from "@/components/GoogleTranslate";
 import { useCategories } from "@/hooks/useCategories";
+import { useCategoryDisplayOrder } from "@/hooks/useCategoryDisplayOrder";
 import { sortCategoriesByDisplayOrder } from "@/lib/categoryOrder";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { data: categoriesRaw = [] } = useCategories();
-  const categories = sortCategoriesByDisplayOrder(categoriesRaw);
+  const { data: displayOrder = [] } = useCategoryDisplayOrder();
+  const categories = useMemo(
+    () => sortCategoriesByDisplayOrder(categoriesRaw, displayOrder.length ? displayOrder : undefined),
+    [categoriesRaw, displayOrder]
+  );
+  const openSearch = useCallback(() => setIsSearchOpen(true), []);
+  const closeSearch = useCallback(() => setIsSearchOpen(false), []);
+  const toggleMenu = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMenuOpen((prev) => !prev);
+  }, []);
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -60,11 +73,12 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
+            <GoogleTranslate />
             <Button
               variant="ghost"
               size="sm"
               className="hidden sm:flex items-center gap-2 text-foreground hover:text-primary"
-              onClick={() => setIsSearchOpen(true)}
+              onClick={openSearch}
             >
               <Search className="h-4 w-4" />
               <span className="text-sm">Search</span>
@@ -73,7 +87,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               className="sm:hidden"
-              onClick={() => setIsSearchOpen(true)}
+              onClick={openSearch}
               aria-label="Search"
             >
               <Search className="h-5 w-5" />
@@ -82,10 +96,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               className="md:hidden relative z-[101]"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMenuOpen(!isMenuOpen);
-              }}
+              onClick={toggleMenu}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -99,7 +110,7 @@ export function Header() {
         <div className="fixed inset-0 z-[60] md:hidden">
           <div
             className="absolute top-0 left-0 right-0 bottom-0 bg-black/40"
-            onClick={() => setIsMenuOpen(false)}
+            onClick={closeMenu}
             aria-hidden
           />
           <div
@@ -116,11 +127,18 @@ export function Header() {
                   key={category.id}
                   to={`/category/${category.slug}`}
                   className="block px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={closeMenu}
                 >
                   {category.name}
                 </Link>
               ))}
+              <div className="border-t my-4" />
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-2">
+                Language
+              </div>
+              <div className="px-4 py-2 text-sm text-muted-foreground">
+                Use the <strong className="text-foreground">Language</strong> dropdown at the top of the page to translate.
+              </div>
               <div className="border-t my-4" />
               <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-2">
                 Pages
@@ -136,7 +154,7 @@ export function Header() {
                   key={to}
                   to={to}
                   className="block px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={closeMenu}
                 >
                   {label}
                 </Link>
@@ -146,7 +164,7 @@ export function Header() {
         </div>
       )}
 
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
     </>
   );
 }

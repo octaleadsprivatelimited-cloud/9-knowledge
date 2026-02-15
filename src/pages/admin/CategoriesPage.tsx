@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,10 +32,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useCategories';
-import { Plus, Edit, Trash, Loader2 } from 'lucide-react';
+import { useCategoryDisplayOrder, useUpdateCategoryDisplayOrder } from '@/hooks/useCategoryDisplayOrder';
+import { Plus, Edit, Trash, Loader2, ArrowUp, ArrowDown, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const generateSlug = (name: string): string => {
   return name
@@ -60,11 +62,50 @@ const CategoriesPage = () => {
     image_url: '',
   });
 
-  const { data: categories, isLoading } = useCategories();
+  const { data: categories = [], isLoading } = useCategories();
+  const { data: displayOrder = [] } = useCategoryDisplayOrder();
+  const updateDisplayOrder = useUpdateCategoryDisplayOrder();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
   const { toast } = useToast();
+
+  // Order for header & homepage: merge saved order with any categories not in it
+  const orderedCategories = (() => {
+    if (!categories.length) return [];
+    const order = [...displayOrder];
+    for (const c of categories) {
+      if (!order.includes(c.id)) order.push(c.id);
+    }
+    return order
+      .map((id) => categories.find((c) => c.id === id))
+      .filter(Boolean) as typeof categories;
+  })();
+
+  const [displayOrderDraft, setDisplayOrderDraft] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (orderedCategories.length) {
+      setDisplayOrderDraft(orderedCategories.map((c) => c.id));
+    }
+  }, [displayOrder.join(','), categories.length]);
+
+  const moveDisplayOrder = (index: number, direction: 'up' | 'down') => {
+    const next = [...displayOrderDraft];
+    const swap = direction === 'up' ? index - 1 : index + 1;
+    if (swap < 0 || swap >= next.length) return;
+    [next[index], next[swap]] = [next[swap], next[index]];
+    setDisplayOrderDraft(next);
+  };
+
+  const saveDisplayOrder = async () => {
+    try {
+      await updateDisplayOrder.mutateAsync(displayOrderDraft);
+      toast({ title: 'Display order saved. Header and homepage will use this order.' });
+    } catch (e: any) {
+      toast({ title: 'Failed to save order', description: e?.message, variant: 'destructive' });
+    }
+  };
 
   const openNewDialog = () => {
     setEditingCategory(null);
@@ -147,6 +188,66 @@ const CategoriesPage = () => {
             New Category
           </Button>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Display order (header &amp; homepage)</CardTitle>
+            <CardDescription>
+              Drag order below is used in the site header and on the homepage. Use Move up/down then Save.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!orderedCategories.length ? (
+              <p className="text-sm text-muted-foreground">Add categories above first.</p>
+            ) : (
+              <div className="space-y-2">
+                {displayOrderDraft.map((id, index) => {
+                  const cat = categories.find((c) => c.id === id);
+                  if (!cat) return null;
+                  return (
+                    <div
+                      key={id}
+                      className="flex items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2"
+                    >
+                      <span className="font-medium">{cat.name}</span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => moveDisplayOrder(index, 'up')}
+                          disabled={index === 0}
+                          aria-label="Move up"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => moveDisplayOrder(index, 'down')}
+                          disabled={index === displayOrderDraft.length - 1}
+                          aria-label="Move down"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+                <Button
+                  onClick={saveDisplayOrder}
+                  disabled={updateDisplayOrder.isPending}
+                  className="mt-2"
+                >
+                  {updateDisplayOrder.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Save className="h-4 w-4 mr-2" />
+                  Save display order
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="border rounded-lg">
           <Table>

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import type { PublicArticle } from "@/hooks/usePublicArticles";
 
@@ -7,7 +8,7 @@ interface LatestUpdatesStripProps {
 
 const placeholderImage = "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop";
 
-export function LatestUpdatesStrip({ articles }: LatestUpdatesStripProps) {
+function LatestUpdatesStripComponent({ articles }: LatestUpdatesStripProps) {
   if (!articles.length) return null;
 
   return (
@@ -27,6 +28,7 @@ export function LatestUpdatesStrip({ articles }: LatestUpdatesStripProps) {
                   alt={article.featured_image_alt || article.title}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div className="p-3">
@@ -46,3 +48,5 @@ export function LatestUpdatesStrip({ articles }: LatestUpdatesStripProps) {
     </section>
   );
 }
+
+export const LatestUpdatesStrip = memo(LatestUpdatesStripComponent);

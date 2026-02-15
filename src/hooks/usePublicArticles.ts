@@ -30,6 +30,9 @@ export interface PublicArticle {
   is_trending: boolean | null;
   view_count: number | null;
   author_id: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_keywords: string[] | null;
   category: {
     id: string;
     name: string;
@@ -70,6 +73,9 @@ const convertToPublicArticle = async (docSnapshot: any): Promise<PublicArticle> 
   const data = docSnapshot.data();
   
   // Handle missing db gracefully
+  const metaKeywords = data.meta_keywords;
+  const metaKeywordsArr = Array.isArray(metaKeywords) ? metaKeywords : (metaKeywords ? [metaKeywords] : null);
+
   if (!db) {
     return {
       id: docSnapshot.id,
@@ -85,6 +91,9 @@ const convertToPublicArticle = async (docSnapshot: any): Promise<PublicArticle> 
       is_trending: data.is_trending || null,
       view_count: data.view_count || null,
       author_id: data.author_id || null,
+      meta_title: data.meta_title || null,
+      meta_description: data.meta_description || null,
+      meta_keywords: metaKeywordsArr,
       category: null,
     };
   }
@@ -105,12 +114,42 @@ const convertToPublicArticle = async (docSnapshot: any): Promise<PublicArticle> 
     is_trending: data.is_trending,
     view_count: data.view_count,
     author_id: data.author_id,
+    meta_title: data.meta_title || null,
+    meta_description: data.meta_description || null,
+    meta_keywords: metaKeywordsArr,
     category: category ? {
       id: category.id,
       name: category.name,
       slug: category.slug,
       color: category.color || null,
     } : null,
+  };
+};
+
+/** Convert doc to PublicArticle using a pre-fetched category map (no extra getDoc). Used for batch loading. */
+const convertToPublicArticleWithCategoryMap = (docSnapshot: any, categoryMap: Map<string, { id: string; name?: string; slug?: string; color?: string }>): PublicArticle => {
+  const data = docSnapshot.data();
+  const metaKeywords = data.meta_keywords;
+  const metaKeywordsArr = Array.isArray(metaKeywords) ? metaKeywords : (metaKeywords ? [metaKeywords] : null);
+  const category = data.category_id ? categoryMap.get(data.category_id) : null;
+  return {
+    id: docSnapshot.id,
+    title: data.title || '',
+    slug: data.slug || '',
+    excerpt: data.excerpt || null,
+    content: data.content || null,
+    featured_image: data.featured_image || null,
+    featured_image_alt: data.featured_image_alt || null,
+    reading_time: data.reading_time || null,
+    published_at: convertTimestamp(data.published_at),
+    is_featured: data.is_featured || null,
+    is_trending: data.is_trending || null,
+    view_count: data.view_count || null,
+    author_id: data.author_id || null,
+    meta_title: data.meta_title || null,
+    meta_description: data.meta_description || null,
+    meta_keywords: metaKeywordsArr,
+    category: category ? { id: category.id, name: category.name ?? '', slug: category.slug ?? '', color: category.color ?? null } : null,
   };
 };
 
@@ -320,6 +359,22 @@ export const useTrendingArticles = () => {
   });
 };
 
+/** Fetch unique categories in one parallel batch (avoids N sequential getDoc in latest articles). */
+const fetchCategoryMap = async (categoryIds: string[]): Promise<Map<string, { id: string; name?: string; slug?: string; color?: string }>> => {
+  const unique = [...new Set(categoryIds.filter(Boolean))];
+  if (!db || unique.length === 0) return new Map();
+  const pairs = await Promise.all(
+    unique.map(async (id) => {
+      try {
+        const snap = await getDoc(doc(db, 'categories', id));
+        if (snap.exists()) return [id, { id: snap.id, ...snap.data() }] as const;
+      } catch (_) {}
+      return null;
+    })
+  );
+  return new Map(pairs.filter((p): p is [string, { id: string; name?: string; slug?: string; color?: string }] => p !== null));
+};
+
 export const useLatestArticles = (limit: number = 9) => {
   return useQuery({
     queryKey: ['latest-articles', limit],
@@ -329,7 +384,6 @@ export const useLatestArticles = (limit: number = 9) => {
       }
 
       try {
-        // Try query with orderBy first
         const articlesQuery = query(
           collection(db, 'articles'),
           where('status', '==', 'published'),
@@ -338,11 +392,9 @@ export const useLatestArticles = (limit: number = 9) => {
         );
 
         const snapshot = await getDocs(articlesQuery);
-        const articles: PublicArticle[] = [];
-
-        for (const docSnapshot of snapshot.docs) {
-          articles.push(await convertToPublicArticle(docSnapshot));
-        }
+        const categoryIds = snapshot.docs.map((d) => d.data().category_id).filter(Boolean);
+        const categoryMap = await fetchCategoryMap(categoryIds);
+        const articles = snapshot.docs.map((d) => convertToPublicArticleWithCategoryMap(d, categoryMap));
 
         if (import.meta.env.DEV) {
           console.log('Latest articles loaded:', articles.length);
@@ -350,29 +402,24 @@ export const useLatestArticles = (limit: number = 9) => {
 
         return articles;
       } catch (error: any) {
-        // If collection doesn't exist or permission denied, return empty array
         if (error?.code === 'not-found' || error?.message?.includes('not found') || error?.code === 'permission-denied') {
           console.warn('Latest articles: Collection not found or permission denied');
           return [];
         }
-        // If orderBy fails (likely missing index), try without orderBy
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
           console.warn('Latest articles: orderBy failed, trying without orderBy:', error.message);
-          
+
           const articlesQuery = query(
             collection(db, 'articles'),
             where('status', '==', 'published'),
-            firestoreLimit(limit * 2) // Get more to sort manually
+            firestoreLimit(limit * 2)
           );
 
           const snapshot = await getDocs(articlesQuery);
-          const articles: PublicArticle[] = [];
+          const categoryIds = snapshot.docs.map((d) => d.data().category_id).filter(Boolean);
+          const categoryMap = await fetchCategoryMap(categoryIds);
+          const articles = snapshot.docs.map((d) => convertToPublicArticleWithCategoryMap(d, categoryMap));
 
-          for (const docSnapshot of snapshot.docs) {
-            articles.push(await convertToPublicArticle(docSnapshot));
-          }
-
-          // Sort manually by published_at and limit
           articles.sort((a, b) => {
             if (!a.published_at || !b.published_at) return 0;
             return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
@@ -380,7 +427,6 @@ export const useLatestArticles = (limit: number = 9) => {
 
           return articles.slice(0, limit);
         }
-        // If collection doesn't exist or permission denied, return empty array
         if (error?.code === 'not-found' || error?.message?.includes('not found') || error?.code === 'permission-denied') {
           console.warn('Latest articles: Collection not found or permission denied');
           return [];
@@ -389,8 +435,33 @@ export const useLatestArticles = (limit: number = 9) => {
       }
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 min - fewer refetches, faster repeat loads
   });
+};
+
+/** Filter and convert article docs with batch category fetch (avoids N sequential getDoc). */
+const filterAndConvertArticlesByCategory = async (
+  docs: Array<{ id: string; data: () => any }>,
+  limit: number,
+  now: Date
+): Promise<PublicArticle[]> => {
+  const filtered: Array<{ id: string; data: () => any }> = [];
+  for (const docSnapshot of docs) {
+    const data = docSnapshot.data();
+    const isPublished = data.status === 'published';
+    const isScheduledAndReady = data.status === 'scheduled' && data.scheduled_at &&
+      new Date(data.scheduled_at?.toDate ? data.scheduled_at.toDate() : data.scheduled_at) <= now;
+    if (isPublished || isScheduledAndReady) filtered.push(docSnapshot);
+  }
+  const categoryIds = filtered.map((d) => d.data().category_id).filter(Boolean);
+  const categoryMap = await fetchCategoryMap(categoryIds);
+  const articles = filtered.map((d) => convertToPublicArticleWithCategoryMap(d, categoryMap));
+  articles.sort((a, b) => {
+    const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+    const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+    return dateB - dateA;
+  });
+  return articles.slice(0, limit);
 };
 
 export const useArticlesByCategory = (categorySlug: string, limit: number = 6, options?: { enabled?: boolean }) => {
@@ -403,119 +474,58 @@ export const useArticlesByCategory = (categorySlug: string, limit: number = 6, o
       }
 
       try {
-        // First get the category
         const categoriesQuery = query(
           collection(db, 'categories'),
           where('slug', '==', categorySlug),
           firestoreLimit(1)
         );
-
         const categorySnapshot = await getDocs(categoriesQuery);
         if (categorySnapshot.empty) return [];
 
         const categoryId = categorySnapshot.docs[0].id;
-
-        // Get articles for this category - include both published and scheduled articles
         const articlesQuery = query(
           collection(db, 'articles'),
           where('category_id', '==', categoryId),
           orderBy('published_at', 'desc'),
-          firestoreLimit(limit * 2) // Get more to filter client-side
+          firestoreLimit(limit * 2)
         );
-
         const snapshot = await getDocs(articlesQuery);
-        const articles: PublicArticle[] = [];
         const now = new Date();
-
-        for (const docSnapshot of snapshot.docs) {
-          const data = docSnapshot.data();
-          
-          // Include published articles OR scheduled articles that should be published
-          const isPublished = data.status === 'published';
-          const isScheduledAndReady = data.status === 'scheduled' && 
-            data.scheduled_at && 
-            new Date(data.scheduled_at.toDate ? data.scheduled_at.toDate() : data.scheduled_at) <= now;
-
-          if (isPublished || isScheduledAndReady) {
-            articles.push(await convertToPublicArticle(docSnapshot));
-          }
-        }
-
-        // Sort by published_at (or use created_at as fallback) and limit
-        articles.sort((a, b) => {
-          const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
-          const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
-          return dateB - dateA;
-        });
-
-        return articles.slice(0, limit);
+        return filterAndConvertArticlesByCategory(snapshot.docs, limit, now);
       } catch (error: any) {
-        // If collection doesn't exist or permission denied, return empty array
         if (error?.code === 'not-found' || error?.message?.includes('not found') || error?.code === 'permission-denied') {
           console.warn('Articles by category: Collection not found or permission denied');
           return [];
         }
-        // If orderBy fails, try without orderBy
         if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
           console.warn('Articles by category: orderBy failed, trying without orderBy:', error.message);
-          
           try {
-            // First get the category
             const categoriesQuery = query(
               collection(db, 'categories'),
               where('slug', '==', categorySlug),
               firestoreLimit(1)
             );
-
             const categorySnapshot = await getDocs(categoriesQuery);
             if (categorySnapshot.empty) return [];
-
             const categoryId = categorySnapshot.docs[0].id;
-
-            // Get articles for this category without orderBy
             const articlesQuery = query(
               collection(db, 'articles'),
               where('category_id', '==', categoryId)
             );
-
             const snapshot = await getDocs(articlesQuery);
-            const articles: PublicArticle[] = [];
             const now = new Date();
-
-            for (const docSnapshot of snapshot.docs) {
-              const data = docSnapshot.data();
-              
-              // Include published articles OR scheduled articles that should be published
-              const isPublished = data.status === 'published';
-              const isScheduledAndReady = data.status === 'scheduled' && 
-                data.scheduled_at && 
-                new Date(data.scheduled_at.toDate ? data.scheduled_at.toDate() : data.scheduled_at) <= now;
-
-              if (isPublished || isScheduledAndReady) {
-                articles.push(await convertToPublicArticle(docSnapshot));
-              }
-            }
-
-            // Sort manually by published_at (or use created_at as fallback)
-            articles.sort((a, b) => {
-              const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
-              const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
-              return dateB - dateA;
-            });
-
-            return articles.slice(0, limit);
+            return filterAndConvertArticlesByCategory(snapshot.docs, limit, now);
           } catch (fallbackError: any) {
             console.error('Articles by category: Fallback query also failed:', fallbackError);
             return [];
           }
         }
-        
         console.error('Articles by category: Unexpected error:', error);
         return [];
       }
     },
     enabled: options?.enabled !== false && !!categorySlug,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 min cache
   });
 };
 

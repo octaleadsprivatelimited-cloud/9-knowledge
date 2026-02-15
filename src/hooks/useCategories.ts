@@ -136,8 +136,8 @@ export const useCategories = () => {
       }
     },
     retry: 1,
-    staleTime: 2 * 60 * 1000, // 2 min cache; invalidated on create/update/delete in admin
-    refetchOnWindowFocus: true, // Header and homepage stay in sync when returning from admin
+    staleTime: 5 * 60 * 1000, // 5 min cache; invalidated on create/update/delete in admin
+    refetchOnWindowFocus: false, // Rely on cache for faster repeat visits; admin invalidates when needed
   });
 };
 

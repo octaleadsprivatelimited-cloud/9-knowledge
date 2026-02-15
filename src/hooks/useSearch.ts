@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs, where, orderBy, limit as firestoreLimit } from 'firebase/firestore';
+import { collection, query, getDocs, where, orderBy, limit as firestoreLimit, type QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '@/integrations/firebase/client';
 
 interface SearchResult {
@@ -48,21 +48,46 @@ export const useSearch = (searchQuery: string, debounceMs: number = 300) => {
       setError(null);
 
       try {
-        // Firestore doesn't support full-text search natively
-        // We'll fetch published articles and filter in memory
-        const articlesQuery = query(
-          collection(db, 'articles'),
-          where('status', '==', 'published'),
-          orderBy('published_at', 'desc'),
-          firestoreLimit(50) // Fetch more to filter
-        );
+        if (!db) {
+          setResults([]);
+          return;
+        }
 
-        const snapshot = await getDocs(articlesQuery);
-        const searchLower = searchQuery.toLowerCase();
-        
+        const searchLower = searchQuery.toLowerCase().trim();
+        let docs: QueryDocumentSnapshot[] = [];
+
+        try {
+          const articlesQuery = query(
+            collection(db, 'articles'),
+            where('status', '==', 'published'),
+            orderBy('published_at', 'desc'),
+            firestoreLimit(100)
+          );
+          const snapshot = await getDocs(articlesQuery);
+          docs = snapshot.docs;
+        } catch (indexErr: unknown) {
+          const err = indexErr as { code?: string; message?: string };
+          if (err?.code === 'failed-precondition' || err?.message?.includes('index')) {
+            const fallbackQuery = query(
+              collection(db, 'articles'),
+              where('status', '==', 'published'),
+              firestoreLimit(100)
+            );
+            const snapshot = await getDocs(fallbackQuery);
+            docs = snapshot.docs;
+            docs.sort((a, b) => {
+              const aTime = a.data().published_at?.toDate?.()?.getTime() ?? 0;
+              const bTime = b.data().published_at?.toDate?.()?.getTime() ?? 0;
+              return bTime - aTime;
+            });
+          } else {
+            throw indexErr;
+          }
+        }
+
         const filteredResults: SearchResult[] = [];
 
-        for (const docSnapshot of snapshot.docs) {
+        for (const docSnapshot of docs) {
           const data = docSnapshot.data();
           const title = (data.title || '').toLowerCase();
           const excerpt = (data.excerpt || '').toLowerCase();
@@ -74,14 +99,18 @@ export const useSearch = (searchQuery: string, debounceMs: number = 300) => {
             content.includes(searchLower)
           ) {
             const category = await fetchCategory(data.category_id);
-            
+            const publishedAt = data.published_at;
+            const publishedAtStr =
+              publishedAt?.toDate?.()?.toISOString?.() ??
+              (typeof publishedAt === 'string' ? publishedAt : null);
+
             filteredResults.push({
               id: docSnapshot.id,
               title: data.title,
               slug: data.slug,
               excerpt: data.excerpt,
               featured_image: data.featured_image,
-              published_at: data.published_at?.toDate?.()?.toISOString() || data.published_at,
+              published_at: publishedAtStr,
               reading_time: data.reading_time,
               category: category ? {
                 name: category.name,
@@ -89,7 +118,7 @@ export const useSearch = (searchQuery: string, debounceMs: number = 300) => {
               } : null,
             });
 
-            if (filteredResults.length >= 10) break;
+            if (filteredResults.length >= 15) break;
           }
         }
 
@@ -97,6 +126,9 @@ export const useSearch = (searchQuery: string, debounceMs: number = 300) => {
       } catch (err) {
         setError(err as Error);
         setResults([]);
+        if (import.meta.env.DEV) {
+          console.warn('Search error:', err);
+        }
       } finally {
         setIsLoading(false);
       }
