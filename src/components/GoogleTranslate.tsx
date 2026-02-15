@@ -29,14 +29,14 @@ function getCurrentLang(): string {
  */
 export function triggerTranslateForDynamicContent(): void {
   const lang = getCurrentLang();
-  if (!lang) return;
   const tryTrigger = (attempt = 0) => {
     const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
     if (!select) {
       if (attempt < 5) setTimeout(() => tryTrigger(attempt + 1), 200 * (attempt + 1));
       return;
     }
-    select.value = lang;
+    // Set to target language or empty for English
+    select.value = lang || "";
     select.dispatchEvent(new Event("change", { bubbles: true }));
   };
   setTimeout(() => tryTrigger(0), 150);
@@ -44,11 +44,29 @@ export function triggerTranslateForDynamicContent(): void {
 
 function setLanguage(code: "" | "te" | "hi") {
   if (code === "") {
+    // Clear all Google Translate cookies to return to English
+    const hostname = window.location.hostname;
+    const domain = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
+    
+    // Clear cookies with different variations
     document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`;
+    document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; domain=${hostname}`;
+    document.cookie = `${COOKIE_NAME}=; path=/; max-age=0; domain=.${domain}`;
+    
+    // Set to English explicitly before reload
+    const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+    if (select) {
+      select.value = "";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
   } else {
     document.cookie = `${COOKIE_NAME}=/en/${code}; path=/`;
   }
-  window.location.reload();
+  
+  // Force hard reload to ensure translation clears
+  setTimeout(() => {
+    window.location.reload();
+  }, 100);
 }
 
 declare global {
