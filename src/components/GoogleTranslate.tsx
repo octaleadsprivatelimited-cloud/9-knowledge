@@ -171,11 +171,18 @@ export function GoogleTranslate() {
 
   return (
     <>
-      {/* Hidden container for Google widget (reads cookie and applies translation on load) */}
+      {/* Completely hidden container for Google widget */}
       <div
         id={ELEMENT_ID}
-        className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden"
-        aria-hidden
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          visibility: 'hidden',
+        }}
+        aria-hidden="true"
       />
       {/* Compact 3-language dropdown — matches header style */}
       <label className="relative inline-flex items-center">
@@ -202,22 +209,51 @@ export function GoogleTranslate() {
           </svg>
         </span>
       </label>
-      {/* Hide Google's banner after translation and fix layout issues */}
+      {/* Hide Google's banner and fix all layout issues */}
       <style>{`
-        .goog-te-banner-frame.skiptranslate { 
-          display: none !important; 
+        /* Hide Google Translate banner */
+        .goog-te-banner-frame.skiptranslate,
+        .goog-te-banner-frame,
+        #goog-gt-tt,
+        .goog-te-balloon-frame {
+          display: none !important;
         }
-        body { 
-          top: 0 !important; 
+        
+        /* Fix body positioning issues */
+        body {
+          top: 0 !important;
           position: static !important;
         }
-        /* Ensure translated text is visible */
+        
+        /* Hide the original Google Translate widget completely */
+        #google_translate_element {
+          display: none !important;
+        }
+        
+        .goog-te-gadget {
+          display: none !important;
+        }
+        
+        /* Hide combo text but keep select functional */
+        .goog-te-combo {
+          visibility: hidden !important;
+          position: absolute !important;
+          pointer-events: none !important;
+        }
+        
+        /* Fix vertical alignment of translated text */
         font[style*="vertical-align: inherit;"] {
           vertical-align: baseline !important;
         }
-        /* Fix for translated content */
+        
+        /* Fix translated content direction */
         .translated-ltr {
           direction: ltr !important;
+        }
+        
+        /* Ensure notranslate class works */
+        .notranslate {
+          transform: none !important;
         }
       `}</style>
     </>
