@@ -102,10 +102,12 @@ function getStringOrUrlFromField(value: unknown): string {
 }
 
 function getArticleImageUrl(data: Record<string, unknown>): string {
-  const og = getStringOrUrlFromField(data.og_image);
-  if (og) return ensureAbsoluteImageUrl(og);
-  const feat = getStringOrUrlFromField(data.featured_image) || getStringOrUrlFromField(data.featuredImage);
-  return ensureAbsoluteImageUrl(feat || '');
+  const candidates = [data.og_image, data.featured_image, data.featuredImage, data.image, data.thumbnail];
+  for (const v of candidates) {
+    const s = getStringOrUrlFromField(v);
+    if (s && s.length > 5) return ensureAbsoluteImageUrl(s);
+  }
+  return ensureAbsoluteImageUrl('');
 }
 
 function extractArticleMeta(data: Record<string, unknown>, docId: string): ArticleMeta | null {
@@ -120,7 +122,14 @@ function extractArticleMeta(data: Record<string, unknown>, docId: string): Artic
   if (!isPublished && !isScheduledAndDue) return null;
 
   const title = (data.meta_title || data.title || '').toString().trim() || SITE_TITLE;
-  let description = (data.meta_description || data.excerpt || data.description || '').toString().trim().slice(0, 200);
+  let description = '';
+  for (const d of [data.meta_description, data.excerpt, data.description]) {
+    const s = (d != null ? String(d).trim() : '').slice(0, 200);
+    if (s) {
+      description = s;
+      break;
+    }
+  }
   if (!description && data.content) {
     const raw = String(data.content).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     description = raw.slice(0, 200);
