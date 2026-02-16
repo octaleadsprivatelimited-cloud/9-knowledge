@@ -83,12 +83,19 @@ type ArticleMeta = {
   id: string;
 };
 
+function getStringOrUrlFromField(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object' && value !== null && 'url' in value && typeof (value as { url: unknown }).url === 'string') {
+    return String((value as { url: string }).url).trim();
+  }
+  return String(value).trim();
+}
+
 function getArticleImageUrl(data: Record<string, unknown>): string {
-  const og = data.og_image != null ? String(data.og_image).trim() : '';
+  const og = getStringOrUrlFromField(data.og_image);
   if (og) return ensureAbsoluteImageUrl(og);
-  const feat =
-    (data.featured_image != null ? String(data.featured_image).trim() : '') ||
-    (data.featuredImage != null ? String(data.featuredImage).trim() : '');
+  const feat = getStringOrUrlFromField(data.featured_image) || getStringOrUrlFromField(data.featuredImage);
   return ensureAbsoluteImageUrl(feat || '');
 }
 
@@ -105,8 +112,13 @@ function extractArticleMeta(data: Record<string, unknown>, docId: string): Artic
   if (!isPublished && !isScheduledAndDue) return null;
 
   const title = (data.meta_title || data.title || '').toString().trim() || SITE_TITLE;
-  const description =
-    (data.meta_description || data.excerpt || '').toString().trim().slice(0, 200) || SITE_DESCRIPTION;
+  let description =
+    (data.meta_description || data.excerpt || data.description || '').toString().trim().slice(0, 200);
+  if (!description && data.content) {
+    const raw = String(data.content).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    description = raw.slice(0, 200);
+  }
+  if (!description) description = SITE_DESCRIPTION;
   const imageUrl = getArticleImageUrl(data);
   const imageAlt = (data.featured_image_alt || data.title || title).toString().trim();
   const slug = (data.slug || docId).toString().trim();

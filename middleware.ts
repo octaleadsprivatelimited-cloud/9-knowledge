@@ -46,5 +46,6 @@ export default function middleware(request: Request) {
 
   const apiUrl = new URL('/api/og', url.origin);
   apiUrl.searchParams.set('id', id);
+  apiUrl.searchParams.set('slug', id);
   return rewrite(apiUrl);
 }

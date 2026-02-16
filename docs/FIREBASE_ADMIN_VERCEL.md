@@ -31,8 +31,10 @@ After redeploy:
 If you still see the default title/description/image, check:
 
 - The env var name is exactly `FIREBASE_SERVICE_ACCOUNT_JSON`.
-- The value is valid JSON (same as in your `.json` file).
-- The article ID exists in Firestore and the document has `status: 'published'` and a `featured_image` or `og_image` URL.
+- The value is valid JSON (same as in your `.json` file). Paste the entire file; ensure the `private_key` field keeps its newlines (or use `\n` inside the string).
+- The **project** in the service account JSON (`project_id`) is the same project where your articles are stored in Firestore.
+- The article exists: open `https://your-domain.com/api/og?id=ARTICLE_DOC_ID` in a browser (use a real article ID from your app). If you see article title/description/image there, sharing will work after cache refresh.
+- The document has `status: 'published'` and at least one of: `featured_image`, `og_image`, and for description: `excerpt`, `meta_description`, or `content`.
 
 ## Fallback (no Admin SDK)
 
