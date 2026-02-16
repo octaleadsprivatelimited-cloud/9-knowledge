@@ -33,6 +33,7 @@ export interface PublicArticle {
   meta_title: string | null;
   meta_description: string | null;
   meta_keywords: string[] | null;
+  telugu_content: string | null;  // Optional Telugu version of the article
   category: {
     id: string;
     name: string;
@@ -94,6 +95,7 @@ const convertToPublicArticle = async (docSnapshot: any): Promise<PublicArticle> 
       meta_title: data.meta_title || null,
       meta_description: data.meta_description || null,
       meta_keywords: metaKeywordsArr,
+      telugu_content: data.telugu_content || null,
       category: null,
     };
   }
@@ -117,6 +119,7 @@ const convertToPublicArticle = async (docSnapshot: any): Promise<PublicArticle> 
     meta_title: data.meta_title || null,
     meta_description: data.meta_description || null,
     meta_keywords: metaKeywordsArr,
+    telugu_content: data.telugu_content || null,  // Optional Telugu version
     category: category ? {
       id: category.id,
       name: category.name,
@@ -149,6 +152,7 @@ const convertToPublicArticleWithCategoryMap = (docSnapshot: any, categoryMap: Ma
     meta_title: data.meta_title || null,
     meta_description: data.meta_description || null,
     meta_keywords: metaKeywordsArr,
+    telugu_content: data.telugu_content || null,
     category: category ? { id: category.id, name: category.name ?? '', slug: category.slug ?? '', color: category.color ?? null } : null,
   };
 };

@@ -19,7 +19,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAutosave } from '@/hooks/useAutosave';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Eye, Loader2, Clock, Check } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Loader2, Clock, Check, Languages } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ImageUpload } from '@/components/admin/ImageUpload';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
@@ -50,6 +50,7 @@ const ArticleEditorPage = () => {
     slug: '',
     excerpt: '',
     content: '',
+    telugu_content: '',  // Optional Telugu version of the article
     featured_image: '',
     featured_image_alt: '',
     video_url: '',
@@ -94,6 +95,7 @@ const ArticleEditorPage = () => {
         slug: existingArticle.slug || '',
         excerpt: existingArticle.excerpt || '',
         content: existingArticle.content || '',
+        telugu_content: (existingArticle as any).telugu_content || '',  // Load Telugu version
         featured_image: existingArticle.featured_image || '',
         featured_image_alt: existingArticle.featured_image_alt || '',
         video_url: (existingArticle as any).video_url || '',
@@ -139,6 +141,7 @@ const ArticleEditorPage = () => {
       slug: formData.slug,
       excerpt: formData.excerpt || null,
       content: formData.content || null,
+      telugu_content: formData.telugu_content || null,  // Save Telugu version
       featured_image: formData.featured_image || null,
       featured_image_alt: formData.featured_image_alt || null,
       video_url: formData.video_url || null,
@@ -271,11 +274,27 @@ const ArticleEditorPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">Content</Label>
+                  <Label htmlFor="content">Content (Primary)</Label>
                   <RichTextEditor
                     content={formData.content}
                     onChange={(content) => setFormData({ ...formData, content })}
                     placeholder="Start writing your article..."
+                  />
+                </div>
+
+                {/* Optional Telugu Content */}
+                <div className="space-y-2">
+                  <Label htmlFor="telugu_content" className="flex items-center gap-2">
+                    <Languages className="h-4 w-4" />
+                    Telugu Version (Optional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Add a Telugu version of this article. If provided, a language toggle will appear on the article page.
+                  </p>
+                  <RichTextEditor
+                    content={formData.telugu_content}
+                    onChange={(telugu_content) => setFormData({ ...formData, telugu_content })}
+                    placeholder="తెలుగు వెర్షన్ ఇక్కడ రాయండి... (Write Telugu version here)"
                   />
                 </div>
               </CardContent>

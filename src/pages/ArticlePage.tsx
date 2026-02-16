@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { CategoryBadge } from "@/components/articles/CategoryBadge";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AdSlot from "@/components/ads/AdSlot";
 import { ArticleSchema, BreadcrumbSchema } from "@/components/seo/StructuredData";
-import { Clock, Calendar, Eye, ChevronRight } from "lucide-react";
+import { Clock, Calendar, Eye, ChevronRight, Languages } from "lucide-react";
 import { usePublicArticleBySlug, useLatestArticles } from "@/hooks/usePublicArticles";
 import { useReadingAnalytics } from "@/hooks/useReadingAnalytics";
 import { triggerTranslateForDynamicContent } from "@/components/GoogleTranslate";
@@ -30,6 +30,9 @@ const ArticlePage = () => {
   const idFromUrl = searchParams.get('id') || '';
   const { data: article, isLoading } = usePublicArticleBySlug(slug || '', { id: idFromUrl });
   const { data: latestArticles } = useLatestArticles(4);
+  
+  // State for manual language toggle (separate from Google Translate)
+  const [showTeluguVersion, setShowTeluguVersion] = useState(false);
 
   // Track reading analytics
   useReadingAnalytics(article?.id);
@@ -38,6 +41,11 @@ const ArticlePage = () => {
   const relatedArticles = latestArticles?.filter(
     (a) => a.id !== article?.id && a.category?.id === article?.category?.id
   ).slice(0, 3) || [];
+
+  // Reset toggle when article changes
+  useEffect(() => {
+    setShowTeluguVersion(false);
+  }, [article?.id]);
 
   // Re-apply Google Translate when article content is rendered (dynamic content is not translated on load)
   useEffect(() => {
@@ -50,6 +58,14 @@ const ArticlePage = () => {
       return () => clearTimeout(timer);
     }
   }, [article]);
+  
+  // Determine if Telugu version exists
+  const hasTeluguVersion = article?.telugu_content && article.telugu_content.trim().length > 0;
+  
+  // Get the content to display (original or Telugu version)
+  const displayContent = showTeluguVersion && hasTeluguVersion 
+    ? article.telugu_content 
+    : article?.content;
 
   if (isLoading) {
     return (
@@ -216,16 +232,42 @@ const ArticlePage = () => {
           <div className="flex gap-8">
             <aside className="hidden lg:block w-10 shrink-0 pt-1">
               <div className="sticky top-24 flex flex-col items-center gap-2">
+                {/* Manual Language Toggle - Only show if Telugu version exists */}
+                {hasTeluguVersion && (
+                  <button
+                    onClick={() => setShowTeluguVersion(!showTeluguVersion)}
+                    className="mb-4 text-xs font-medium text-primary hover:text-primary/80 transition-colors flex flex-col items-center gap-1 group"
+                    title={showTeluguVersion ? "Switch to Original Review" : "Click Here For Telugu Review"}
+                  >
+                    <Languages className="h-4 w-4" />
+                    <span className="writing-mode-vertical text-center">
+                      {showTeluguVersion ? "Original" : "తెలుగు"}
+                    </span>
+                  </button>
+                )}
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Share</span>
                 <SocialShare url={shareUrl} title={shareTitle} vertical />
               </div>
             </aside>
             <div className="flex-1 min-w-0">
+              {/* Manual Language Toggle for Mobile - Show above content */}
+              {hasTeluguVersion && (
+                <div className="mb-6 lg:hidden">
+                  <button
+                    onClick={() => setShowTeluguVersion(!showTeluguVersion)}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors px-4 py-2 border border-primary/20 rounded-lg hover:bg-primary/5"
+                  >
+                    <Languages className="h-4 w-4" />
+                    {showTeluguVersion ? "Back to Original Review" : "Click Here For Telugu Review"}
+                  </button>
+                </div>
+              )}
+              
               <div
                 id="article-content"
-                lang="en"
+                lang="te"
                 className="article-content prose prose-sm sm:prose max-w-none text-foreground text-[15px] leading-[1.7] prose-p:my-3 prose-headings:font-display prose-headings:font-bold prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-2 prose-h3:text-base prose-h3:mt-6 prose-h3:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-0.5 prose-img:rounded-lg prose-img:w-full prose-img:my-4 prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/40 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r prose-blockquote:not-italic"
-                dangerouslySetInnerHTML={{ __html: article.content || '' }}
+                dangerouslySetInnerHTML={{ __html: displayContent || '' }}
               />
               <div className="lg:hidden mt-8 pt-6 border-t border-border">
                 <p className="text-xs text-muted-foreground mb-2">Share this article</p>
