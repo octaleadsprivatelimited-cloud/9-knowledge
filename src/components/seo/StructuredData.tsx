@@ -32,11 +32,25 @@ interface ArticleSchemaProps {
 export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle, metaDescription }: ArticleSchemaProps) => {
   const title = metaTitle?.trim() || article.title;
   const description = metaDescription?.trim() || article.excerpt;
-  const keywordsStr = Array.isArray(keywordsProp)
-    ? keywordsProp.filter(Boolean).join(', ')
-    : typeof keywordsProp === 'string'
-      ? keywordsProp.trim()
-      : '';
+  
+  // Process keywords - ensure we always have some keywords
+  let keywordsStr = '';
+  if (Array.isArray(keywordsProp)) {
+    keywordsStr = keywordsProp.filter(Boolean).join(', ');
+  } else if (typeof keywordsProp === 'string') {
+    keywordsStr = keywordsProp.trim();
+  }
+  
+  // If no keywords provided, generate from article data
+  if (!keywordsStr) {
+    const autoKeywords = [article.category?.name, '9knowledge', 'news'].filter(Boolean);
+    keywordsStr = autoKeywords.join(', ');
+  }
+  
+  // Debug in development
+  if (import.meta.env.DEV) {
+    console.log('Article Keywords:', keywordsStr);
+  }
 
   const schema = {
     "@context": "https://schema.org",
@@ -108,7 +122,8 @@ export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle,
       {/* Standard Meta */}
       <title>{title} | 9knowledge</title>
       <meta name="description" content={description} />
-      {keywordsStr ? <meta name="keywords" content={keywordsStr} /> : null}
+      <meta name="keywords" content={keywordsStr} />
+      <meta name="author" content={article.author.name} />
       <link rel="canonical" href={url} />
     </Helmet>
   );

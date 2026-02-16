@@ -113,7 +113,14 @@ const ArticlePage = () => {
           slug: article.slug,
         }}
         url={shareUrl}
-        keywords={Array.isArray(article.meta_keywords) && article.meta_keywords.length > 0 ? article.meta_keywords : undefined}
+        keywords={
+          // Use article keywords if available, otherwise generate from category and title
+          Array.isArray(article.meta_keywords) && article.meta_keywords.length > 0 
+            ? article.meta_keywords 
+            : article.category 
+              ? [article.category.name, '9knowledge', 'news', 'articles']
+              : ['9knowledge', 'news', 'articles']
+        }
         metaTitle={article.meta_title}
         metaDescription={article.meta_description}
       />
