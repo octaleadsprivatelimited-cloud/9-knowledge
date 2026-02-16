@@ -29,9 +29,30 @@ interface ArticleSchemaProps {
   metaDescription?: string | null;
 }
 
+const SITE_URL = 'https://9knowledge.com';
+const DEFAULT_OG_IMAGE = 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop';
+
+/** Ensure image URL is absolute for social crawlers (Facebook, Twitter, WhatsApp require full URLs) */
+function ensureAbsoluteImageUrl(imageUrl: string | null | undefined): string {
+  if (!imageUrl || !imageUrl.trim()) return '';
+  const trimmed = imageUrl.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`;
+  }
+  if (trimmed.startsWith('/')) {
+    return `${SITE_URL}${trimmed}`;
+  }
+  return `${SITE_URL}/${trimmed}`;
+}
+
 export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle, metaDescription }: ArticleSchemaProps) => {
-  const title = metaTitle?.trim() || article.title;
-  const description = metaDescription?.trim() || article.excerpt;
+  // Use ONLY article content for social share - no site name in title/description
+  const title = (metaTitle?.trim() || article.title).replace(/\s*\|\s*9knowledge\s*$/i, '').trim() || article.title;
+  const description = (metaDescription?.trim() || article.excerpt || '').slice(0, 200); // Clean description, max 200 chars for share
+  const imageUrl = ensureAbsoluteImageUrl(article.featuredImage) || (article.featuredImage && article.featuredImage.startsWith('http') ? article.featuredImage : '') || DEFAULT_OG_IMAGE;
   
   // Process keywords - ensure we always have some keywords
   let keywordsStr = '';
@@ -50,6 +71,7 @@ export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle,
   // Debug in development
   if (import.meta.env.DEV) {
     console.log('Article Keywords:', keywordsStr);
+    console.log('Social share image URL:', imageUrl);
   }
 
   const schema = {
@@ -57,7 +79,7 @@ export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle,
     "@type": "Article",
     "headline": article.title,
     "description": article.excerpt,
-    "image": [article.featuredImage],
+    "image": [imageUrl],
     "datePublished": article.publishedAt,
     "dateModified": article.updatedAt || article.publishedAt,
     "author": {
@@ -93,33 +115,35 @@ export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle,
         {JSON.stringify(cleanSchema)}
       </script>
 
-      {/* Open Graph - Facebook, LinkedIn, WhatsApp */}
+      {/* Open Graph - Facebook, LinkedIn, WhatsApp - Article image as thumbnail, article-only content */}
       <meta property="og:type" content="article" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={article.featuredImage} />
-      <meta property="og:image:secure_url" content={article.featuredImage} />
+      <meta property="og:image" content={imageUrl} />
+      <meta property="og:image:url" content={imageUrl} />
+      <meta property="og:image:secure_url" content={imageUrl} />
       <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content={article.title} />
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="9knowledge" />
+      <meta property="og:locale" content="en_IN" />
       <meta property="article:published_time" content={article.publishedAt} />
       <meta property="article:modified_time" content={article.updatedAt || article.publishedAt} />
       <meta property="article:author" content={article.author.name} />
       <meta property="article:section" content={article.category.name} />
 
-      {/* Twitter Card */}
+      {/* Twitter Card - Article image as thumbnail */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@9knowledge" />
       <meta name="twitter:creator" content="@9knowledge" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={article.featuredImage} />
+      <meta name="twitter:image" content={imageUrl} />
       <meta name="twitter:image:alt" content={article.title} />
 
-      {/* Standard Meta */}
+      {/* Standard Meta - Tab title can include site; og/twitter use article-only for share preview */}
       <title>{title} | 9knowledge</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywordsStr} />

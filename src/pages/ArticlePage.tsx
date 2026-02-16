@@ -119,6 +119,11 @@ const ArticlePage = () => {
   const shareTitle = article.title;
   const siteUrl = "https://9knowledge.com";
   const placeholderImage = "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=600&fit=crop";
+  
+  // Ensure featured image is absolute URL for social share thumbnails (required by Facebook, Twitter, WhatsApp)
+  const absoluteFeaturedImage = article.featured_image
+    ? (article.featured_image.startsWith('http') ? article.featured_image : `${siteUrl}${article.featured_image.startsWith('/') ? '' : '/'}${article.featured_image}`)
+    : placeholderImage;
 
   // Breadcrumb data for structured data
   const breadcrumbItems = [
@@ -135,7 +140,7 @@ const ArticlePage = () => {
           title: article.title,
           excerpt: article.excerpt || '',
           content: article.content || '',
-          featuredImage: article.featured_image || placeholderImage,
+          featuredImage: absoluteFeaturedImage,
           publishedAt: article.published_at || new Date().toISOString(),
           author: { name: 'Author' },
           category: article.category || { id: '', name: '', slug: '', color: '' },
