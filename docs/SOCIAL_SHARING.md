@@ -32,6 +32,7 @@ Without these, the API still returns HTML but with site-level fallback title/des
 ## Testing
 
 - **Facebook:** [Sharing Debugger](https://developers.facebook.com/tools/debug/) — enter article URL (e.g. `https://9knowledge.com/article/ARTICLE_DOC_ID`) and “Scrape Again”.
-- **cURL:**  
-  `curl -A "facebookexternalhit/1.1" "https://9knowledge.com/article/ARTICLE_DOC_ID"`  
-  You should see HTML with `<meta property="og:title"`, `og:description`, `og:image`, etc., in the response body.
+- **WhatsApp:** Share the article URL in a chat; the preview (title, description, image) is generated using the same OG tags. Middleware sends WhatsApp’s crawler (User-Agent containing “WhatsApp”) to the API. **If the preview doesn’t update:** WhatsApp caches link previews; try sharing in a new chat or after 24–48 hours, or use the Facebook Sharing Debugger and “Scrape Again” (same crawler family) to refresh.
+- **cURL (simulate WhatsApp):**  
+  `curl -A "WhatsApp/2.23.20.0" "https://9knowledge.com/article/ARTICLE_DOC_ID"`  
+  You should see HTML with `<meta property="og:image"`, `og:title`, `og:description`, etc., in the response body.

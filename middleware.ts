@@ -7,7 +7,8 @@ import { rewrite, next } from '@vercel/functions';
 const CRAWLER_PATTERNS = [
   /facebookexternalhit/i,
   /Facebot/i,
-  /WhatsApp/i,
+  /WhatsApp/i,      // WhatsApp link preview (e.g. WhatsApp/2.x)
+  /WhatApp/i,       // occasional typo in UA
   /Twitterbot/i,
   /LinkedInBot/i,
   /Slackbot/i,

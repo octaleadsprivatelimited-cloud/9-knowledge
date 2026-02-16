@@ -54,13 +54,14 @@ function getCredentials(): admin.credential.Credential | null {
   return null;
 }
 
+/** Normalize to public HTTPS URL so social crawlers can fetch the thumbnail. Fallback only when missing. */
 function ensureAbsoluteImageUrl(imageUrl: string | null | undefined): string {
-  if (!imageUrl || !String(imageUrl).trim()) return DEFAULT_OG_IMAGE;
-  const trimmed = String(imageUrl).trim();
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
-  if (trimmed.startsWith('//')) return `https:${trimmed}`;
-  if (trimmed.startsWith('/')) return `${SITE_URL}${trimmed}`;
-  return `${SITE_URL}/${trimmed}`;
+  const raw = imageUrl != null ? String(imageUrl).trim() : '';
+  if (!raw) return DEFAULT_OG_IMAGE;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  if (raw.startsWith('//')) return `https:${raw}`;
+  if (raw.startsWith('/')) return `${SITE_URL}${raw}`;
+  return `${SITE_URL}/${raw}`;
 }
 
 function escapeHtml(s: string): string {
@@ -104,8 +105,10 @@ function extractArticleMeta(data: Record<string, unknown>, docId: string): Artic
 
   const title = (data.meta_title || data.title || '').toString().trim() || SITE_TITLE;
   const description = (data.meta_description || data.excerpt || '').toString().trim().slice(0, 200) || SITE_DESCRIPTION;
-  const feat = data.featured_image;
-  const imageUrl = ensureAbsoluteImageUrl(feat ? String(feat) : '');
+  // Social preview thumbnail: prefer dedicated og_image, then blog featured image (always public HTTPS)
+  const ogImage = data.og_image != null ? String(data.og_image).trim() : '';
+  const feat = data.featured_image != null ? String(data.featured_image).trim() : '';
+  const imageUrl = ensureAbsoluteImageUrl(ogImage || feat || '');
   const imageAlt = (data.featured_image_alt || data.title || title).toString().trim();
   const slug = (data.slug || docId).toString().trim();
   return { title, description, imageUrl, imageAlt, slug };
@@ -165,21 +168,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <title>${safeTitle} | 9knowledge</title>
   <meta name="description" content="${safeDescription}" />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="${safeTitle}" />
-  <meta property="og:description" content="${safeDescription}" />
   <meta property="og:image" content="${safeImage}" />
+  <meta property="og:image:url" content="${safeImage}" />
   <meta property="og:image:secure_url" content="${safeImage}" />
   <meta property="og:image:width" content="${OG_IMAGE_WIDTH}" />
   <meta property="og:image:height" content="${OG_IMAGE_HEIGHT}" />
   <meta property="og:image:alt" content="${safeImageAlt}" />
+  <meta property="og:title" content="${safeTitle}" />
+  <meta property="og:description" content="${safeDescription}" />
   <meta property="og:url" content="${safeUrl}" />
   <meta property="og:site_name" content="9knowledge" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${safeTitle}" />
-  <meta name="twitter:description" content="${safeDescription}" />
   <meta name="twitter:image" content="${safeImage}" />
   <meta name="twitter:image:alt" content="${safeImageAlt}" />
+  <meta name="twitter:title" content="${safeTitle}" />
+  <meta name="twitter:description" content="${safeDescription}" />
   <link rel="canonical" href="${safeUrl}" />
+  <link rel="image_src" href="${safeImage}" />
 </head>
 <body><p>Loading...</p></body>
 </html>`;
