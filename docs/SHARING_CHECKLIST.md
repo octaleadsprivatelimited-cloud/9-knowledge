@@ -4,12 +4,9 @@ When someone shares an article link (WhatsApp, Facebook, X, LinkedIn), the previ
 
 ## What the app does
 
-1. **Crawlers** (WhatsApp, Facebook, etc.) that open `/article/ARTICLE_ID` are sent to the server endpoint `/api/og?id=ARTICLE_ID`.
-2. The server loads the article from Firestore and returns HTML with:
-   - **og:image** = article’s `featured_image` or `og_image` (actual image URL)
-   - **og:description** = article’s `excerpt` or `meta_description` or first 200 chars of `content`
-   - **og:title** = article’s title  
-   Default image/description are used **only** when the article is missing or has no image/description.
+1. **Article URLs** (`/article/ARTICLE_ID` or `/article/ARTICLE_ID/slug`) are served by the server with **initial HTML** that includes article-specific `og:title`, `og:description`, `og:image`, `og:url`, and `og:type=article` in the `<head>`. So "View Page Source" on an article page and crawler requests both see the correct meta.
+2. **Crawlers** (WhatsApp, Facebook, etc.) that open `/article/ARTICLE_ID` are also sent to `/api/og?id=ARTICLE_ID` by middleware and get the same article meta there.
+3. Article meta in that HTML uses: **og:image** = article’s `featured_image` or `og_image` (actual image URL); **og:description** = article’s `excerpt` or `meta_description` or first 200 chars of `content`; **og:title** = article’s title. Default image/description are used **only** when the article is missing or has no image/description.
 
 ## Your checklist (do these 3 things)
 

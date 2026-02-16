@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-article-template.js",
     "build:dev": "vite build --mode development",
     "build:prod": "vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview",
     "test-build": "npm run build && npm run preview",
-    "vercel-build": "vite build"
+    "vercel-build": "vite build && node scripts/generate-article-template.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
