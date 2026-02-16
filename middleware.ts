@@ -44,6 +44,7 @@ export default function middleware(request: Request) {
     return next();
   }
 
-  const apiUrl = new URL(`/api/article/${encodeURIComponent(id)}`, url.origin);
+  const apiUrl = new URL('/api/og', url.origin);
+  apiUrl.searchParams.set('id', id);
   return rewrite(apiUrl);
 }
