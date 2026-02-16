@@ -1,14 +1,16 @@
 /**
- * Sends social crawlers (Facebook, WhatsApp, Twitter, etc.) to the article-meta API
- * so they receive HTML with og/twitter meta tags. Normal users get the SPA as usual.
+ * Crawler-only Open Graph workaround for article sharing.
+ * - Detects social crawlers (facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, etc.) by User-Agent.
+ * - Crawlers requesting /article/:id get rewritten to /api/og and receive minimal HTML with article og:* meta only (no React SPA).
+ * - Normal users get the existing React app unchanged (no layout/routing changes).
  */
 import { rewrite, next } from '@vercel/functions';
 
 const CRAWLER_PATTERNS = [
   /facebookexternalhit/i,
   /Facebot/i,
-  /WhatsApp/i,      // WhatsApp link preview (e.g. WhatsApp/2.x)
-  /WhatApp/i,       // occasional typo in UA
+  /WhatsApp/i,
+  /WhatApp/i,
   /Twitterbot/i,
   /LinkedInBot/i,
   /Slackbot/i,
