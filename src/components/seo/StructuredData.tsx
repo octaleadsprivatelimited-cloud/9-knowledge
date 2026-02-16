@@ -79,12 +79,18 @@ export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle,
         {JSON.stringify(cleanSchema)}
       </script>
 
-      {/* Open Graph */}
+      {/* Open Graph - Facebook, LinkedIn, WhatsApp */}
       <meta property="og:type" content="article" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={article.featuredImage} />
+      <meta property="og:image:secure_url" content={article.featuredImage} />
+      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={article.title} />
       <meta property="og:url" content={url} />
+      <meta property="og:site_name" content="9knowledge" />
       <meta property="article:published_time" content={article.publishedAt} />
       <meta property="article:modified_time" content={article.updatedAt || article.publishedAt} />
       <meta property="article:author" content={article.author.name} />
@@ -92,9 +98,12 @@ export const ArticleSchema = ({ article, url, keywords: keywordsProp, metaTitle,
 
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@9knowledge" />
+      <meta name="twitter:creator" content="@9knowledge" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={article.featuredImage} />
+      <meta name="twitter:image:alt" content={article.title} />
 
       {/* Standard Meta */}
       <title>{title} | 9knowledge</title>
