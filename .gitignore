@@ -45,6 +45,10 @@ Thumbs.db
 .firebase/
 firebase-debug.log
 firestore-debug.log
+# Never commit Firebase Admin SDK service account keys (contains private key)
+*-firebase-adminsdk-*.json
+*firebase*adminsdk*.json
+serviceAccount*.json
 
 # Lock files (optional - you may want to commit these)
 # package-lock.json
