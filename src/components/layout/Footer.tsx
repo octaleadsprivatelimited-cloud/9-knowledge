@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { Mail, Twitter, Facebook, Linkedin, Instagram } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
+import { useSettings } from "@/hooks/useSettings";
 
 /** Boldsky-style minimal footer: brand, links, copyright */
 export function Footer() {
   const { data: categories = [] } = useCategories();
+  const { data: settings } = useSettings();
 
   return (
     <footer className="bg-muted/50 border-t border-border">
@@ -47,21 +49,66 @@ export function Footer() {
           {/* Social + copyright row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-border">
             <div className="flex items-center gap-2">
-              <a href="mailto:9knowledgeblog@gmail.com" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Email">
+              {/* Email */}
+              <a 
+                href="mailto:9knowledgeblog@gmail.com" 
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors" 
+                aria-label="Email"
+              >
                 <Mail className="h-4 w-4" />
               </a>
-              <a href="#" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Twitter">
-                <Twitter className="h-4 w-4" />
-              </a>
-              <a href="#" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Facebook">
-                <Facebook className="h-4 w-4" />
-              </a>
-              <a href="#" className="p-2 text-muted-foreground hover:text-foreground" aria-label="LinkedIn">
-                <Linkedin className="h-4 w-4" />
-              </a>
-              <a href="#" className="p-2 text-muted-foreground hover:text-foreground" aria-label="Instagram">
-                <Instagram className="h-4 w-4" />
-              </a>
+              
+              {/* Twitter/X - Only show if URL exists */}
+              {settings?.social_media?.twitter && (
+                <a 
+                  href={settings.social_media.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors" 
+                  aria-label="Twitter"
+                >
+                  <Twitter className="h-4 w-4" />
+                </a>
+              )}
+              
+              {/* Facebook - Only show if URL exists */}
+              {settings?.social_media?.facebook && (
+                <a 
+                  href={settings.social_media.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors" 
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+              )}
+              
+              {/* LinkedIn - Only show if URL exists */}
+              {settings?.social_media?.linkedin && (
+                <a 
+                  href={settings.social_media.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors" 
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="h-4 w-4" />
+                </a>
+              )}
+              
+              {/* Instagram - Only show if URL exists */}
+              {settings?.social_media?.instagram && (
+                <a 
+                  href={settings.social_media.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors" 
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} <span className="font-semibold text-foreground">9knowledge</span>. All rights reserved.

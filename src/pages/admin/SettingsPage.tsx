@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,14 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Globe, Shield, Palette } from 'lucide-react';
+import { Save, Globe, Shield, Palette, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useSettings, useUpdateSettings } from '@/hooks/useSettings';
 
 const SettingsPage = () => {
   const { toast } = useToast();
+  const { data: savedSettings, isLoading } = useSettings();
+  const updateSettings = useUpdateSettings();
   
   const [generalSettings, setGeneralSettings] = useState({
     siteName: '9knowledge',
@@ -40,8 +43,40 @@ const SettingsPage = () => {
     youtube: '',
   });
 
+  // Load saved settings
+  useEffect(() => {
+    if (savedSettings?.social_media) {
+      setSocialSettings({
+        twitter: savedSettings.social_media.twitter || '',
+        facebook: savedSettings.social_media.facebook || '',
+        linkedin: savedSettings.social_media.linkedin || '',
+        instagram: savedSettings.social_media.instagram || '',
+        youtube: savedSettings.social_media.youtube || '',
+      });
+    }
+  }, [savedSettings]);
+
+  const handleSaveSocial = async () => {
+    try {
+      await updateSettings.mutateAsync({
+        social_media: socialSettings,
+      });
+      toast({ title: 'Social media links saved successfully' });
+    } catch (error) {
+      toast({ 
+        title: 'Failed to save settings', 
+        description: 'Please try again',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const handleSave = (section: string) => {
-    toast({ title: `${section} settings saved successfully` });
+    if (section === 'Social') {
+      handleSaveSocial();
+    } else {
+      toast({ title: `${section} settings saved successfully` });
+    }
   };
 
   return (
@@ -275,9 +310,21 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                <Button onClick={() => handleSave('Social')}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
+                <Button 
+                  onClick={() => handleSave('Social')}
+                  disabled={updateSettings.isPending}
+                >
+                  {updateSettings.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
