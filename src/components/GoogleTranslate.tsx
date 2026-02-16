@@ -220,14 +220,42 @@ export function GoogleTranslate() {
           </svg>
         </span>
       </label>
-      {/* Hide Google's banner and fix all layout issues */}
+      {/* Hide ALL Google Translate UI elements completely */}
       <style>{`
-        /* Hide Google Translate banner */
+        /* Hide all Google Translate banners and popups */
         .goog-te-banner-frame.skiptranslate,
         .goog-te-banner-frame,
         #goog-gt-tt,
-        .goog-te-balloon-frame {
+        .goog-te-balloon-frame,
+        .goog-te-balloon,
+        .goog-te-ftab,
+        .goog-te-menu-frame,
+        .goog-te-menu2,
+        .goog-te-menu-value,
+        #goog-gt-,
+        .goog-tooltip,
+        .goog-text-highlight,
+        div[id^="goog-gt-"],
+        div[class^="goog-te"] {
           display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          position: absolute !important;
+          left: -9999px !important;
+          top: -9999px !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        
+        /* Hide all iframes from Google Translate */
+        iframe[id*="goog"],
+        iframe[src*="translate.google"],
+        iframe[src*="translate_a/element"] {
+          display: none !important;
+          visibility: hidden !important;
+          position: absolute !important;
+          left: -9999px !important;
         }
         
         /* Fix body positioning issues */
@@ -236,12 +264,18 @@ export function GoogleTranslate() {
           position: static !important;
         }
         
+        body.translated-ltr {
+          top: 0 !important;
+        }
+        
         /* Hide the original Google Translate widget completely */
-        #google_translate_element {
+        #google_translate_element,
+        #google_translate_element * {
           display: none !important;
         }
         
-        .goog-te-gadget {
+        .goog-te-gadget,
+        .goog-te-gadget * {
           display: none !important;
         }
         
@@ -250,6 +284,13 @@ export function GoogleTranslate() {
           visibility: hidden !important;
           position: absolute !important;
           pointer-events: none !important;
+          left: -9999px !important;
+        }
+        
+        /* Hide spinner and loading elements */
+        .goog-te-spinner-pos,
+        .goog-te-spinner-animation {
+          display: none !important;
         }
         
         /* Fix vertical alignment of translated text */
@@ -265,6 +306,12 @@ export function GoogleTranslate() {
         /* Ensure notranslate class works */
         .notranslate {
           transform: none !important;
+        }
+        
+        /* Hide any overlays or tooltips */
+        [class*="goog-"],
+        [id*="goog-"] {
+          z-index: -1 !important;
         }
       `}</style>
     </>
