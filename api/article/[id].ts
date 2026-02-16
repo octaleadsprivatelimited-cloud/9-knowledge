@@ -1,25 +1,58 @@
 /**
- * Server-side Open Graph and SEO meta tags for article URLs.
+ * Server-side Open Graph and SEO metadata for article URLs.
  *
- * This app is Vite + React (not Next.js). Social crawlers (WhatsApp, Facebook, X, LinkedIn)
- * do not execute JavaScript, so meta tags must be in the initial HTML. This serverless
- * function returns that HTML when crawlers request /article/:slug (via middleware).
+ * Article routing uses the document ID in the path: /article/[id] or /article/[id]/[slug].
+ * This API fetches the article by ID using Firebase Admin SDK (server-safe; no client SDK).
+ * Metadata is included in the initial HTML response for crawlers (WhatsApp, Facebook, X, LinkedIn).
  *
- * No useEffect, react-helmet, or client-only meta updates are used for crawlers;
- * all OG/SEO tags are generated here on the server.
+ * No useEffect, useSearchParams, or client-only hooks for metadata.
+ * Site-level metadata never overrides article-level metadata.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs, getDoc, doc, limit } from 'firebase/firestore';
+import * as admin from 'firebase-admin';
 
 const SITE_URL = 'https://9knowledge.com';
 const SITE_TITLE = '9knowledge';
 const SITE_DESCRIPTION = 'Your Trusted Source for News & Insights';
-// Social preview minimum recommended size: 1200×630
 const DEFAULT_OG_IMAGE = 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop';
 const OG_IMAGE_WIDTH = '1200';
 const OG_IMAGE_HEIGHT = '630';
+
+function getAdminFirestore(): admin.firestore.Firestore | null {
+  if (!admin.apps.length) {
+    const cred = getCredentials();
+    if (cred) {
+      admin.initializeApp({ credential: cred });
+    } else {
+      return null;
+    }
+  }
+  return admin.firestore();
+}
+
+function getCredentials(): admin.credential.Credential | null {
+  const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (json && json.trim()) {
+    try {
+      const parsed = JSON.parse(json) as Record<string, unknown>;
+      return admin.credential.cert(parsed as admin.ServiceAccount);
+    } catch (_) {
+      return null;
+    }
+  }
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (projectId && clientEmail && privateKey) {
+    return admin.credential.cert({
+      projectId,
+      clientEmail,
+      privateKey,
+    } as admin.ServiceAccount);
+  }
+  return null;
+}
 
 function ensureAbsoluteImageUrl(imageUrl: string | null | undefined): string {
   if (!imageUrl || !String(imageUrl).trim()) return DEFAULT_OG_IMAGE;
@@ -39,20 +72,14 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function getSlugFromRequest(req: VercelRequest): string | null {
-  const slug = req.query?.slug;
-  if (typeof slug === 'string' && slug.trim()) return decodeURIComponent(slug.trim());
+function getIdFromRequest(req: VercelRequest): string | null {
+  const id = req.query?.id;
+  if (typeof id === 'string' && id.trim()) return id.trim();
   try {
     const path = (req.url || '').split('?')[0] || '';
     const match = path.match(/\/api\/article\/([^/]+)/);
-    if (match?.[1]) return decodeURIComponent(match[1]);
+    if (match?.[1]) return match[1];
   } catch (_) {}
-  return null;
-}
-
-function getArticleIdFromRequest(req: VercelRequest): string | null {
-  const id = req.query?.id;
-  if (typeof id === 'string' && id.trim()) return id.trim();
   return null;
 }
 
@@ -68,10 +95,11 @@ function extractArticleMeta(data: Record<string, unknown>, docId: string): Artic
   const status = (data.status || '').toString().toLowerCase();
   const isPublished = status === 'published';
   const scheduledAt = data.scheduled_at;
+  const scheduledDate = scheduledAt && typeof (scheduledAt as { toDate?: () => Date }).toDate === 'function'
+    ? (scheduledAt as { toDate: () => Date }).toDate()
+    : scheduledAt;
   const isScheduledAndDue =
-    status === 'scheduled' &&
-    scheduledAt &&
-    new Date((scheduledAt as { toDate?: () => Date })?.toDate ? (scheduledAt as { toDate: () => Date }).toDate() : (scheduledAt as Date)) <= new Date();
+    status === 'scheduled' && scheduledAt && new Date(scheduledDate as Date) <= new Date();
   if (!isPublished && !isScheduledAndDue) return null;
 
   const title = (data.meta_title || data.title || '').toString().trim() || SITE_TITLE;
@@ -89,82 +117,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const slug = getSlugFromRequest(req);
-  const articleId = getArticleIdFromRequest(req);
-  if (!slug && !articleId) {
-    res.status(400).send('Missing slug or id');
+  const id = getIdFromRequest(req);
+  if (!id) {
+    res.status(400).send('Missing article id');
     return;
   }
 
-  // Fallbacks: used only when article is missing or fields are empty (no site-level override of article metadata)
   let title = SITE_TITLE;
   let description = SITE_DESCRIPTION;
   let imageUrl = DEFAULT_OG_IMAGE;
   let imageAlt = SITE_TITLE;
-  let resolvedSlug = slug || '';
+  let slug = id;
 
   try {
-    const apiKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
-    const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
-    const appId = process.env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID;
-
-    if (apiKey && projectId && appId) {
-      if (!getApps().length) {
-        initializeApp({
-          apiKey,
-          authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN || '',
-          projectId,
-          storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET || '',
-          messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '',
-          appId,
-        });
-      }
-
-      const db = getFirestore();
-      let meta: ArticleMeta | null = null;
-
-      if (articleId) {
-        try {
-          const docRef = doc(db, 'articles', articleId);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) meta = extractArticleMeta(docSnap.data(), docSnap.id);
-        } catch (_) {}
-      }
-
-      if (!meta && slug) {
-        const q = query(
-          collection(db, 'articles'),
-          where('slug', '==', slug),
-          limit(1)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const d = snapshot.docs[0];
-          meta = extractArticleMeta(d.data(), d.id);
+    const db = getAdminFirestore();
+    if (db) {
+      const docRef = db.collection('articles').doc(id);
+      const docSnap = await docRef.get();
+      const data = docSnap.exists ? docSnap.data() : null;
+      if (data) {
+        const meta = extractArticleMeta(data, docSnap.id);
+        if (meta) {
+          title = meta.title;
+          description = meta.description;
+          imageUrl = meta.imageUrl;
+          imageAlt = meta.imageAlt;
+          slug = meta.slug;
         }
-      }
-
-      if (meta) {
-        title = meta.title;
-        description = meta.description;
-        imageUrl = meta.imageUrl;
-        imageAlt = meta.imageAlt;
-        resolvedSlug = meta.slug;
       }
     }
   } catch (e) {
     console.error('Article meta API error:', e);
   }
 
-  const canonicalUrl = `${SITE_URL}/article/${encodeURIComponent(resolvedSlug || 'article')}${articleId ? `?id=${encodeURIComponent(articleId)}` : ''}`;
-
+  const canonicalUrl = `${SITE_URL}/article/${encodeURIComponent(id)}`;
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   const safeImage = escapeHtml(imageUrl);
   const safeImageAlt = escapeHtml(imageAlt);
   const safeUrl = escapeHtml(canonicalUrl);
 
-  // All tags in initial HTML so crawlers never need JavaScript. No site-level metadata overrides article.
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>

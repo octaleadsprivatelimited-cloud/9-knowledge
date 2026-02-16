@@ -19,7 +19,7 @@ function LatestUpdatesStripComponent({ articles }: LatestUpdatesStripProps) {
           {articles.map((article) => (
             <Link
               key={article.id}
-              to={`/article/${article.slug || article.id}?id=${article.id}`}
+              to={`/article/${article.id}`}
               className="group min-w-0 md:shrink-0 md:w-[300px] bg-card rounded-lg border border-border overflow-hidden hover:border-primary/40 transition-colors"
             >
               <div className="aspect-[16/10] overflow-hidden">

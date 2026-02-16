@@ -36,14 +36,13 @@ export default function middleware(request: Request) {
     return next();
   }
 
-  // pathname is like /article/my-slug or /article/my-slug/...
+  // pathname: /article/[id] or /article/[id]/[slug] — first segment is article ID
   const pathname = url.pathname.replace(/^\/article\/?/, '').trim();
-  const slug = pathname.split('/')[0].split('?')[0];
-  if (!slug) {
+  const id = pathname.split('/')[0].split('?')[0];
+  if (!id) {
     return next();
   }
 
-  const apiUrl = new URL(`/api/article/${encodeURIComponent(slug)}`, url.origin);
-  apiUrl.search = url.search; // preserve ?id= for server-side fetch by article ID
+  const apiUrl = new URL(`/api/article/${encodeURIComponent(id)}`, url.origin);
   return rewrite(apiUrl);
 }

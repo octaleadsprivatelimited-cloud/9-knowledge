@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { CategoryBadge } from "@/components/articles/CategoryBadge";
 import { ArticleCard } from "@/components/articles/ArticleCard";
@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AdSlot from "@/components/ads/AdSlot";
 import { ArticleSchema, BreadcrumbSchema } from "@/components/seo/StructuredData";
 import { Clock, Calendar, Eye, ChevronRight, Languages } from "lucide-react";
-import { usePublicArticleBySlug, useLatestArticles } from "@/hooks/usePublicArticles";
+import { usePublicArticleById, useLatestArticles } from "@/hooks/usePublicArticles";
 import { useReadingAnalytics } from "@/hooks/useReadingAnalytics";
 import { getCurrentLanguage, translateTo } from "@/components/GoogleTranslate";
 
@@ -25,10 +25,8 @@ const formatDate = (dateString: string | null) => {
 };
 
 const ArticlePage = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const [searchParams] = useSearchParams();
-  const idFromUrl = searchParams.get('id') || '';
-  const { data: article, isLoading } = usePublicArticleBySlug(slug || '', { id: idFromUrl });
+  const { id } = useParams<{ id: string; slug?: string }>();
+  const { data: article, isLoading } = usePublicArticleById(id);
   const { data: latestArticles } = useLatestArticles(4);
   
   // State for manual language toggle (separate from Google Translate)
@@ -115,7 +113,7 @@ const ArticlePage = () => {
     );
   }
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://9knowledge.com/article/${slug}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://9knowledge.com/article/${article.id}`;
   const shareTitle = article.title;
   const siteUrl = "https://9knowledge.com";
   const placeholderImage = "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=600&fit=crop";

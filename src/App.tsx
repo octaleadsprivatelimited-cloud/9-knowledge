@@ -67,7 +67,8 @@ const App = () => (
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
-            <Route path="/article/:slug" element={<ArticlePage />} />
+            <Route path="/article/:id" element={<ArticlePage />} />
+            <Route path="/article/:id/:slug" element={<ArticlePage />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route path="/tag/:slug" element={<TagPage />} />
             <Route path="/about" element={<AboutPage />} />

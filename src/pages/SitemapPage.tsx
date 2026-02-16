@@ -65,11 +65,10 @@ function buildSitemapXml(
     lines.push("  </url>");
   }
 
-  // Article pages (updates automatically when new articles are added by admin)
+  // Article pages (routing uses article ID in path)
   for (const article of articles) {
-    const slugOrId = article.slug || article.id;
-    if (!slugOrId) continue;
-    const loc = escapeXml(`${BASE_URL}/article/${slugOrId}`);
+    if (!article.id) continue;
+    const loc = escapeXml(`${BASE_URL}/article/${article.id}`);
     const lastmod = toLastmod(article.published_at);
     lines.push("  <url>");
     lines.push(`    <loc>${loc}</loc>`);
