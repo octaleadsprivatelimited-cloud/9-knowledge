@@ -24,6 +24,39 @@ function getCurrentLang(): string {
   return "";  // No translation (original Telugu)
 }
 
+// Export for use in other components
+export function getCurrentLanguage(): string {
+  return getCurrentLang();
+}
+
+// Function to trigger translation to a specific language
+export function translateTo(targetLang: "en" | "hi" | "") {
+  if (targetLang === "") {
+    // Clear translation
+    const hostname = window.location.hostname;
+    const domain = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
+    const rootDomain = domain.split('.').slice(-2).join('.');
+    
+    const cookieNames = ['googtrans', COOKIE_NAME];
+    const domains = ['', hostname, `.${hostname}`, domain, `.${domain}`, rootDomain, `.${rootDomain}`];
+    
+    cookieNames.forEach(name => {
+      domains.forEach(dom => {
+        const domainStr = dom ? `; domain=${dom}` : '';
+        document.cookie = `${name}=; path=/; max-age=0${domainStr}`;
+      });
+    });
+    
+    window.location.replace(window.location.pathname + window.location.search);
+  } else {
+    // Set translation
+    document.cookie = `${COOKIE_NAME}=/te/${targetLang}; path=/`;
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  }
+}
+
 /**
  * Force complete page re-translation for dynamically loaded content.
  * This is the nuclear option that works reliably for article pages.

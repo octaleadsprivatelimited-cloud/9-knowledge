@@ -12,7 +12,7 @@ import { ArticleSchema, BreadcrumbSchema } from "@/components/seo/StructuredData
 import { Clock, Calendar, Eye, ChevronRight, Languages } from "lucide-react";
 import { usePublicArticleBySlug, useLatestArticles } from "@/hooks/usePublicArticles";
 import { useReadingAnalytics } from "@/hooks/useReadingAnalytics";
-import { triggerTranslateForDynamicContent } from "@/components/GoogleTranslate";
+import { getCurrentLanguage, translateTo } from "@/components/GoogleTranslate";
 
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '';
@@ -66,6 +66,20 @@ const ArticlePage = () => {
   const displayContent = showTeluguVersion && hasTeluguVersion 
     ? article.telugu_content 
     : article?.content;
+  
+  // Detect current translation state for the translation prompt
+  const currentTranslation = getCurrentLanguage();
+  const isTranslatedToEnglish = currentTranslation === "en";
+  const isOriginalTelugu = currentTranslation === "";
+  
+  // Determine which translation to offer
+  const translationPrompt = isTranslatedToEnglish 
+    ? { text: "తెలుగులో చదవండి (Read in Telugu)", targetLang: "" as const }
+    : { text: "Translate to English", targetLang: "en" as const };
+  
+  const handleTranslate = () => {
+    translateTo(translationPrompt.targetLang);
+  };
 
   if (isLoading) {
     return (
@@ -269,6 +283,25 @@ const ArticlePage = () => {
                 className="article-content prose prose-sm sm:prose max-w-none text-foreground text-[15px] leading-[1.7] prose-p:my-3 prose-headings:font-display prose-headings:font-bold prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-2 prose-h3:text-base prose-h3:mt-6 prose-h3:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-0.5 prose-img:rounded-lg prose-img:w-full prose-img:my-4 prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-muted/40 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r prose-blockquote:not-italic"
                 dangerouslySetInnerHTML={{ __html: displayContent || '' }}
               />
+              
+              {/* Translation Prompt - At end of article */}
+              <div className="mt-10 pt-6 border-t border-border">
+                <button
+                  onClick={handleTranslate}
+                  className="inline-flex items-center gap-2 text-base font-medium text-primary hover:text-primary/80 transition-colors group"
+                >
+                  <Languages className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <span className="underline underline-offset-4 decoration-2 decoration-primary/30 group-hover:decoration-primary">
+                    {translationPrompt.text}
+                  </span>
+                </button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {isTranslatedToEnglish 
+                    ? "Switch back to original Telugu version" 
+                    : "Translate this article to English"}
+                </p>
+              </div>
+              
               <div className="lg:hidden mt-8 pt-6 border-t border-border">
                 <p className="text-xs text-muted-foreground mb-2">Share this article</p>
                 <SocialShare url={shareUrl} title={shareTitle} />
