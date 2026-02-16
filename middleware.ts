@@ -44,5 +44,6 @@ export default function middleware(request: Request) {
   }
 
   const apiUrl = new URL(`/api/article/${encodeURIComponent(slug)}`, url.origin);
+  apiUrl.search = url.search; // preserve ?id= for server-side fetch by article ID
   return rewrite(apiUrl);
 }
