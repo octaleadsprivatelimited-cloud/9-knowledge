@@ -12,7 +12,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
 
-const SITE_URL = 'https://9knowledge.com';
+const SITE_URL = process.env.VITE_SITE_URL || process.env.SITE_URL || 'https://9knowledge.com';
 const SITE_TITLE = '9knowledge';
 const SITE_DESCRIPTION =
   'Your Trusted Source for News & Insights';
@@ -58,10 +58,12 @@ function getCredentials(): admin.credential.Credential | null {
   return null;
 }
 
+/** Always return HTTPS absolute URL for WhatsApp/Facebook. */
 function ensureAbsoluteImageUrl(imageUrl: string | null | undefined): string {
   const raw = imageUrl != null ? String(imageUrl).trim() : '';
   if (!raw) return DEFAULT_OG_IMAGE;
-  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  if (raw.startsWith('https://')) return raw;
+  if (raw.startsWith('http://')) return raw.replace('http://', 'https://');
   if (raw.startsWith('//')) return `https:${raw}`;
   if (raw.startsWith('/')) return `${SITE_URL}${raw}`;
   return `${SITE_URL}/${raw}`;

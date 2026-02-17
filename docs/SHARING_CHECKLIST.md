@@ -1,50 +1,50 @@
-# Article sharing: show actual image and description
+# Article sharing: WhatsApp & Facebook previews
 
 When someone shares an article link (WhatsApp, Facebook, X, LinkedIn), the preview must show the **article’s image** and **article’s description**, not the site default.
 
-## What the app does
+## How it works
 
-1. **Article URLs** (`/article/ARTICLE_ID` or `/article/ARTICLE_ID/slug`) are served by the server with **initial HTML** that includes article-specific `og:title`, `og:description`, `og:image`, `og:url`, and `og:type=article` in the `<head>`. So "View Page Source" on an article page and crawler requests both see the correct meta.
-2. **Crawlers** (WhatsApp, Facebook, etc.) that open `/article/ARTICLE_ID` are also sent to `/api/og?id=ARTICLE_ID` by middleware and get the same article meta there.
-3. Article meta in that HTML uses: **og:image** = article’s `featured_image` or `og_image` (actual image URL); **og:description** = article’s `excerpt` or `meta_description` or first 200 chars of `content`; **og:title** = article’s title. Default image/description are used **only** when the article is missing or has no image/description.
+1. **Crawlers** (WhatsApp, Facebook, etc.) that request `/article/ARTICLE_ID` are detected by User-Agent and **rewritten to `/api/og`**. They receive minimal HTML with article-specific Open Graph and Twitter meta in the **initial response** (no client-side JS).
+2. **Users** opening the same URL get the full React app, which is also served with article meta in the initial HTML via `/api/article-page`.
+3. **Meta rules**: **og:image** and **twitter:image** are always **absolute HTTPS** URLs (required by WhatsApp/Facebook). **og:title**, **og:description**, **og:url**, **og:type=article** and **twitter:card=summary_large_image** are set from the article’s title, excerpt/meta_description, and featured/og image. Fallback to site defaults only when the article is missing or has no image/description.
 
-## Your checklist (do these 3 things)
+## Checklist (do these)
 
 ### 1. Set Firebase on Vercel
 
-So the server can read the article from Firestore:
+- Vercel → Project → **Settings** → **Environment Variables**
+- Add **`FIREBASE_SERVICE_ACCOUNT_JSON`** = full contents of your Firebase service account JSON (Project settings → Service accounts → Generate new private key)
+- **Redeploy** after saving
 
-- Vercel → your project → **Settings** → **Environment Variables**
-- Add **`FIREBASE_SERVICE_ACCOUNT_JSON`**
-- Value = **entire contents** of your Firebase service account JSON file (the one from Firebase Console → Project settings → Service accounts → Generate new private key)
-- Save and **redeploy** the project
+Without this, the server cannot load articles and will always return the default image and description.
 
-Without this, the server cannot load the article and will always return the default image and description.
+### 2. Set site URL (optional but recommended)
 
-### 2. Make sure the article has image and text
+- Add **`VITE_SITE_URL`** or **`SITE_URL`** = your production URL (e.g. `https://9knowledge.com` or `https://9-knowledge.vercel.app`)
+- Ensures **og:url** and canonical links are correct when shared
 
-In the **admin** for each article:
+### 3. Article content
 
-- **Featured image**: set a valid image URL (e.g. from your uploads or Firebase Storage). It must be a **public HTTPS** URL.
-- **Excerpt** or **Meta description**: fill at least one so the share preview has a short description.
+For each article in admin:
 
-### 3. Test the share URL
+- **Featured image** (or **og_image**): use a **public HTTPS** URL (e.g. Firebase Storage or your CDN). Minimum ~1200×630 recommended for best previews.
+- **Excerpt** or **Meta description**: set at least one so the share preview has a short description.
 
-After deploy:
+### 4. Verify the OG response
 
-1. Open in a browser:  
-   `https://YOUR-DOMAIN.com/api/og?id=REAL_ARTICLE_ID`  
-   (use a real article ID from your site, e.g. from the article page URL `/article/xyz` → id is `xyz`).
+1. Open: `https://YOUR-DOMAIN.com/api/og?id=REAL_ARTICLE_ID` (use a real article ID from `/article/xyz` → id is `xyz`).
+2. You should see the article title and description on the page.
+3. **View Page Source**: confirm `<meta property="og:image" content="https://...">` is the article’s image (absolute HTTPS), and **og:title** / **og:description** match the article.
+4. If this page is correct, sharing the **article URL** (`/article/xyz`) on WhatsApp/Facebook will show the same (after cache refresh).
 
-2. You should see:
-   - The **article title**
-   - The **article description** (excerpt/meta description)
-   - In the page source (View Source), **og:image** should be the article’s image URL, not the default image.
+### 5. Fix cached wrong previews (WhatsApp / Facebook)
 
-3. If that page shows the correct title, description, and image, then sharing the article link will show them too (after platforms refresh their cache, e.g. Facebook “Scrape Again” or sharing in a new chat).
+- **Facebook**: Use [Sharing Debugger](https://developers.facebook.com/tools/debug/) → enter article URL → **Scrape Again**. Repeat if needed.
+- **WhatsApp**: Previews are cached; sharing the same link in a **new chat** or after some time often fetches updated meta. Ensure the article URL is exactly the same as in your app (e.g. `https://yoursite.com/article/ARTICLE_ID`).
 
 ## If it still shows default
 
-- Confirm **FIREBASE_SERVICE_ACCOUNT_JSON** is set on Vercel and you **redeployed** after adding it.
-- Confirm the **article ID** in the shared URL is correct (same as in your app).
-- Confirm the article in Firestore has **status: published** and has **featured_image** (or **og_image**) and **excerpt** (or **meta_description** or **content**) set.
+- **FIREBASE_SERVICE_ACCOUNT_JSON** is set on Vercel and you **redeployed** after adding it.
+- **Article ID** in the shared URL matches the app (e.g. `/article/abc123` → id `abc123`).
+- Article in Firestore is **status: published** and has **featured_image** or **og_image** (HTTPS) and **excerpt** or **meta_description** or **content**.
+- Image URL is **publicly accessible** (no auth) and **HTTPS**.

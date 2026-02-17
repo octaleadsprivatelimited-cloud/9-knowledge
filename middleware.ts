@@ -1,25 +1,24 @@
 /**
- * Crawler-only Open Graph workaround for article sharing.
- * - Detects social crawlers (facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, etc.) by User-Agent.
- * - Crawlers requesting /article/:id get rewritten to /api/og and receive minimal HTML with article og:* meta only (no React SPA).
- * - Normal users get the existing React app unchanged (no layout/routing changes).
+ * Crawler-only Open Graph middleware for article sharing.
+ * - Detects social crawlers by User-Agent
+ * - Rewrites /article/:id/:slug → /api/og?id=:id&slug=:slug
+ * - Normal users continue to receive the React SPA
  */
+
 import { rewrite, next } from '@vercel/functions';
 
 const CRAWLER_PATTERNS = [
   /facebookexternalhit/i,
-  /Facebot/i,
-  /WhatsApp/i,
-  /WhatApp/i,
-  /Twitterbot/i,
-  /LinkedInBot/i,
-  /Slackbot/i,
-  /TelegramBot/i,
-  /Pinterest/i,
-  /Googlebot/i,
-  /bingbot/i,
-  /Discordbot/i,
-  /Applebot/i,
+  /facebot/i,
+  /whatsapp/i,
+  /wab/i,
+  /twitterbot/i,
+  /linkedinbot/i,
+  /slackbot/i,
+  /telegrambot/i,
+  /pinterest/i,
+  /discordbot/i,
+  /applebot/i,
 ];
 
 function isCrawler(userAgent: string | null): boolean {
@@ -35,19 +34,33 @@ export default function middleware(request: Request) {
   const url = new URL(request.url);
   const userAgent = request.headers.get('user-agent') || '';
 
+  // Let normal users load the SPA
   if (!isCrawler(userAgent)) {
     return next();
   }
 
-  // pathname: /article/[id] or /article/[id]/[slug] — first segment is article ID
-  const pathname = url.pathname.replace(/^\/article\/?/, '').trim();
-  const id = pathname.split('/')[0].split('?')[0];
+  /**
+   * Expected paths:
+   * /article/:id
+   * /article/:id/:slug
+   */
+  const path = url.pathname.replace(/^\/article\/?/, '');
+  const parts = path.split('/').filter(Boolean);
+
+  const id = parts[0];
+  const slug = parts[1] || '';
+
   if (!id) {
     return next();
   }
 
-  const apiUrl = new URL('/api/og', url.origin);
-  apiUrl.searchParams.set('id', id);
-  apiUrl.searchParams.set('slug', id);
-  return rewrite(apiUrl);
+  const ogUrl = new URL('/api/og', url.origin);
+  ogUrl.searchParams.set('id', id);
+
+  // IMPORTANT: pass slug only if it exists
+  if (slug) {
+    ogUrl.searchParams.set('slug', slug);
+  }
+
+  return rewrite(ogUrl);
 }
